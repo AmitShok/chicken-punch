@@ -1,0 +1,42 @@
+[gd_scene load_steps=4 format=3 uid="uid://cp683ctvgcmdk"]
+
+[ext_resource type="Script" uid="uid://d21rre87hgmo1" path="res://triple_shuriken.gd" id="1_0dpsa"]
+[ext_resource type="Texture2D" uid="uid://duc51jn0q8dg3" path="res://assets/Ninja Adventure - Asset Pack/FX/Projectile/Shuriken.png" id="2_bteky"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_lt46u"]
+radius = 6.0827627
+
+[node name="Shuriken" type="Area2D" groups=["attacks", "player_attacks"]]
+collision_layer = 4
+collision_mask = 4
+script = ExtResource("1_0dpsa")
+speed = 100.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(1, -8)
+texture = ExtResource("2_bteky")
+hframes = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="Sprite2D"]
+position = Vector2(-9, -13)
+texture = ExtResource("2_bteky")
+hframes = 2
+
+[node name="Sprite2D2" type="Sprite2D" parent="Sprite2D"]
+position = Vector2(-8, 15)
+texture = ExtResource("2_bteky")
+hframes = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(1, -8)
+shape = SubResource("CircleShape2D_lt46u")
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="."]
+position = Vector2(-7, 7)
+shape = SubResource("CircleShape2D_lt46u")
+
+[node name="CollisionShape2D3" type="CollisionShape2D" parent="."]
+position = Vector2(-8, -21)
+shape = SubResource("CircleShape2D_lt46u")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

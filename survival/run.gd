@@ -1,0 +1,928 @@
+extends Node2D
+
+const Data = preload("res://survival/data.gd")
+const Shot = preload("res://survival/projectile.gd")
+const Pickup = preload("res://survival/pickup.gd")
+const Interface = preload("res://survival/interface.gd")
+const ENEMY = preload("res://enemy.tscn")
+const Arsenal = preload("res://survival/arsenal.gd")
+const DURATION = 600.0
+var arsenal: RefCounted
+var ascension = ""
+var pending_ascension = ""
+var guardians_defeated = 0
+var items: Dictionary = {}
+var pending_treasures = 0
+var paid_chests = 0
+var last_chest_paid = 0
+var last_chest_note = ""
+var pending_evolutions: Array = []
+var sound_clocks: Dictionary = {}
+var offer_kind = "upgrade"
+var offer_rarities: Dictionary = {}
+var damage_totals: Dictionary = {}
+var skips = 2
+var player: Node
+var ui: CanvasLayer
+var elapsed = 0.0
+var kills = 0
+
+# Coins are run-only; legacy pickup/reward ID "gold" also grants coins.
+var coins = 0
+var gold_earned = 0
+var ended = false
+var difficulty = 1.0
+var pending_levels = 0
+var ranks: Dictionary = {"egg": 1}
+var evolved: Dictionary = {}
+var enemies: Array = []
+var arena_bounds = Rect2(-540, -400, 1320, 1000)
+var cooldowns: Dictionary = {"egg": 0.0, "shuriken": 0.0, "fire": 0.0, "orbit": 0.0}
+var spawn_clock = 0.0
+var elite_clock = 45.0
+var treasure_clock = 25.0
+var boss_stage = 0
+var final_boss_dead = false
+var orbit_clock = 0.0
+var orbit_sprites: Array = []
+var hazards: Array = []
+var fire_trail_started = false
+var fire_last_position = Vector2.ZERO
+var fire_trail_progress = 0.0
+var rerolls = 3
+var banishes = 2
+var banned: Array = []
+var offers: Array = []
+var save: Dictionary
+var damage_labels = 0
+var music: AudioStreamPlayer
+var crowd_grid: Dictionary = {}
+var sounds: Dictionary = {}
+var rng = RandomNumberGenerator.new()
+
+func _ready():
+	rng.randomize()
+	add_to_group("run")
+	player = $Chicken
+	player.run = self
+	arsenal = Arsenal.new(self)
+	save = Data.read_save()
+	var character = save.get("character", "nugget")
+	if not Data.CHARACTERS.has(character):
+		character = "nugget"
+	ranks = {Data.CHARACTERS[character][1]: 1}
+	player.configure_character(character)
+	player.max_hp += Data.training(save).heart * 10
+	player.hp = player.max_hp
+	if get_tree().has_meta("difficulty"):
+		difficulty = get_tree().get_meta("difficulty")
+	$MobTimer/MobTimer.stop()
+	$GUIlayer.hide()
+	$CanvasModulate.color = Color(0.9, 0.92, 0.94)
+	$PointLight2D.hide()
+	var ground = get_node("Ground layer")
+	var used: Rect2i = ground.get_used_rect()
+	if used.size.x > 10:
+		arena_bounds = Rect2(Vector2(used.position) * 16 + Vector2(24, 24), Vector2(used.size) * 16 - Vector2(48, 48))
+	ui = Interface.new()
+	ui.run = self
+	add_child(ui)
+	music = AudioStreamPlayer.new()
+	music.stream = load(Data.PACK + "Audio/Musics/34  - Fight.ogg")
+	music.volume_db = -17
+	setup_audio_buses()
+	music.bus = "Music"
+	music.finished.connect(music.play)
+	add_child(music)
+	if DisplayServer.get_name() != "headless":
+		music.play()
+	var clips = {
+		"hit": ["Hit & Impact/Hit1.wav", -12], "pickup": ["Bonus/Coin.wav", -26],
+		"upgrade": ["Bonus/PowerUp1.wav", -14], "evolution": ["Bonus/PowerUp2.wav", -10],
+		"egg": ["Whoosh & Slash/Launch.wav", -23], "shuriken": ["Whoosh & Slash/Slash2.wav", -23],
+		"fire": ["Elemental/Fire2.wav", -28], "orbit": ["Whoosh & Slash/Slash.wav", -28],
+		"thunder": ["Elemental/Explosion5.wav", -22], "frost": ["Elemental/Water4.wav", -22],
+		"sickle": ["Whoosh & Slash/Whoosh2.wav", -22], "shell": ["Elemental/Fireball.wav", -24],
+		"explosion": ["Elemental/Explosion2.wav", -24], "dash": ["Creature/Wings.wav", -17],
+		"select": ["Menu/Accept2.wav", -15], "chest": ["Menu/Accept8.wav", -13],
+		"critical": ["Hit & Impact/Hit3.wav", -27], "defeat": ["Menu/Cancel2.wav", -12]
+	}
+	for key in clips:
+		var sound = AudioStreamPlayer.new()
+		sound.stream = load(Data.PACK + "Audio/Sounds/" + clips[key][0])
+		sound.volume_db = clips[key][1]
+		sound.bus = "SFX"
+		sound.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(sound)
+		sounds[key] = sound
+	apply_audio_settings()
+	AudioServer.set_bus_mute(0, save.muted)
+	for i in range(3):
+		drop("chest", walkable_position(150 + i * 55), 1)
+	ui.announce("SURVIVE THE NIGHT", "Defeat the final guardian at 10:00. Follow the chest compass.")
+
+func _physics_process(delta):
+	if ended:
+		return
+	enemies = enemies.filter(func(e): return is_instance_valid(e) and not e.dead)
+	if pending_ascension != "" and not ui.modal_open:
+		ui.show_ascension(pending_ascension)
+		pending_ascension = ""
+		get_tree().paused = true
+		return
+	if not pending_evolutions.is_empty() and not ui.modal_open:
+		ui.show_evolution(pending_evolutions.pop_front())
+		get_tree().paused = true
+		return
+	if pending_treasures > 0 and not ui.modal_open:
+		show_treasure()
+		return
+	if pending_levels > 0 and not ui.modal_open:
+		show_upgrades()
+		return
+	crowd_grid.clear()
+	for enemy in enemies:
+		var cell = Vector2i((enemy.global_position / 32).floor())
+		if not crowd_grid.has(cell):
+			crowd_grid[cell] = []
+		crowd_grid[cell].append(enemy)
+	elapsed += delta
+	spawn_clock -= delta
+	if spawn_clock <= 0 and elapsed < DURATION:
+		var minute = int(elapsed / 60)
+		spawn_clock = maxf(0.13, 0.95 - minute * 0.085)
+		var count = 1 + int(minute / 3)
+		for i in range(count):
+			if enemies.size() >= 180:
+				break
+			var type = "dog"
+			var roll = rng.randf()
+			if elapsed > 35 and roll < 0.25:
+				type = "bat"
+			if elapsed > 90 and roll > 0.7:
+				type = "tank"
+			if elapsed > 150 and roll > 0.88:
+				type = "caster"
+			spawn_enemy(type)
+	elite_clock -= delta
+	if elite_clock <= 0 and elapsed < DURATION:
+		elite_clock = 55
+		spawn_enemy("tank", true)
+		ui.announce("ELITE ON THE HUNT", "Gold-ring enemies drop treasure. Prepare an evolution!")
+	treasure_clock -= delta
+	if treasure_clock <= 0:
+		treasure_clock = 50
+		drop("chest", walkable_position(220), 1)
+		drop("magnet", walkable_position(120), 1)
+	if (boss_stage == 0 and elapsed >= 180) or (boss_stage == 1 and elapsed >= 360) or (boss_stage == 2 and elapsed >= DURATION):
+		boss_stage += 1
+		spawn_enemy("boss", true)
+		ui.announce("GUARDIAN %d / 3" % boss_stage, "Watch the red windup. Dash through gaps in the volley.")
+	for key in cooldowns:
+		cooldowns[key] -= delta
+	attack_weapons()
+	arsenal.tick(delta)
+	update_orbits(delta)
+	update_hazards(delta)
+	if final_boss_dead:
+		finish(true)
+
+func walkable_position(distance: float) -> Vector2:
+	# Test the actual map physics before placing rewards or spawning enemies.
+	var shape = CircleShape2D.new()
+	shape.radius = 10
+	var query = PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.collision_mask = 1
+	for attempt in range(32):
+		var pos = player.global_position + Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
+		pos = pos.clamp(arena_bounds.position + Vector2(16, 16), arena_bounds.end - Vector2(16, 16))
+		query.transform = Transform2D(0, pos)
+		if get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
+			return pos
+	return player.global_position + Vector2(0, 30)
+
+func spawn_enemy(type: String, champion: bool = false):
+	var enemy = ENEMY.instantiate()
+	enemy.position = walkable_position(310)
+	add_child(enemy)
+	enemy.configure(self, type, champion)
+	enemies.append(enemy)
+	return enemy
+
+func power() -> float:
+	return 1.0 + ranks.get("might", 0) * 0.2 + Data.training(save).power * 0.05 + (items.get("berserk", 0) * 0.25 if player.hp < player.max_hp * 0.5 else 0.0)
+
+func area_multiplier() -> float:
+	return 1.0 + ranks.get("area", 0) * 0.18
+
+func nearest_enemy():
+	var result = null
+	var distance = 340.0 * 340.0
+	for enemy in enemies:
+		if is_instance_valid(enemy) and not enemy.dead:
+			var d = player.global_position.distance_squared_to(enemy.global_position)
+			if d < distance:
+				result = enemy
+				distance = d
+	return result
+
+func attack_weapons():
+	var target = nearest_enemy()
+	var haste = pow(0.9, ranks.get("haste", 0))
+	for key in ["egg", "shuriken"]:
+		var rank = ranks.get(key, 0)
+		if rank == 0 or cooldowns[key] > 0 or target == null:
+			continue
+		play_sound(key)
+		var dir = player.global_position.direction_to(target.global_position)
+		cooldowns[key] = (0.85 if key == "egg" else 1.6) * haste * ascension_cooldown(key)
+		var count = (rank if key == "egg" else rank + 2) + projectile_bonus()
+		if evolved.has(key):
+			count += 3
+		if key == "egg" and ascension == "henpocalypse":
+			count += 8
+		for i in range(count):
+			var angle = (i - (count - 1) / 2.0) * 0.14
+			var shot = make_shot(player.global_position, dir.rotated(angle), key)
+			shot.damage = (10 + rank * 4) * power()
+			shot.pierce = 1 if key == "egg" else 2 + rank
+			if key == "egg" and evolved.has(key):
+				shot.splash = 30 * area_multiplier() * weapon_size_multiplier() * (1.8 if ascension == "henpocalypse" else 1.0)
+	update_fire_trail()
+
+func fire_spacing() -> float:
+	return 65.0 * pow(0.9, ranks.get("haste", 0)) * ascension_cooldown("fire") / (1 + projectile_bonus())
+
+func update_fire_trail():
+	if ranks.get("fire", 0) <= 0:
+		fire_trail_started = false
+		return
+	var position_now = player.global_position
+	var distance = fire_last_position.distance_to(position_now)
+	if not fire_trail_started or distance > 512:
+		fire_trail_started = true
+		fire_last_position = position_now
+		fire_trail_progress = 0.0
+		spawn_fire_patch(position_now)
+		return
+	if distance > 0.001:
+		# Measure distance along each movement segment, including corners/dashes.
+		var spacing = fire_spacing()
+		var next = maxf(0.0, spacing - fire_trail_progress)
+		while next <= distance + 0.0001:
+			spawn_fire_patch(fire_last_position.lerp(position_now, minf(1.0, next / distance)))
+			next += spacing
+		fire_trail_progress = maxf(0.0, distance - (next - spacing))
+	elif cooldowns.fire <= 0:
+		spawn_fire_patch(position_now)
+		fire_trail_progress = 0.0
+	fire_last_position = position_now
+
+func spawn_fire_patch(pos: Vector2):
+	cooldowns.fire = fire_spacing() / 100.0
+	play_sound("fire")
+	var fire_rank = ranks.get("fire", 0)
+	var sprite = Sprite2D.new()
+	sprite.texture = load(Data.PACK + "FX/Particle/Fire.png")
+	sprite.hframes = maxi(1, int(sprite.texture.get_width() / 8))
+	sprite.position = pos
+	sprite.scale = Vector2.ONE * area_multiplier() * weapon_size_multiplier() * (1.6 if evolved.has("fire") else 1)
+	if evolved.has("fire"):
+		var phoenix = Sprite2D.new()
+		phoenix.texture = Data.icon("fire", false, true)
+		phoenix.position.y = -7
+		sprite.add_child(phoenix)
+	add_child(sprite)
+	hazards.append({"sprite": sprite, "age": 0.0, "life": (2.0 + fire_rank * 0.5) * duration_multiplier(), "tick": 0.0, "radius": 17 * sprite.scale.x, "damage": (4 + fire_rank * 3) * power()})
+
+func make_shot(pos: Vector2, dir: Vector2, type: String):
+	var shot = Shot.new()
+	shot.run = self
+	shot.position = pos
+	shot.direction = dir
+	shot.source = type
+	var sprite = Sprite2D.new()
+	sprite.name = "Sprite"
+	if type == "egg":
+		sprite.texture = load("res://assets/egg_sprite.png")
+	elif type == "sickle":
+		sprite.texture = Data.icon("sickle")
+	elif type == "shell":
+		sprite.texture = load(Data.PACK + "FX/Projectile/CanonBall.png")
+		sprite.hframes = 5
+	elif type == "frost":
+		var atlas = AtlasTexture.new()
+		atlas.atlas = load(Data.PACK + "FX/Projectile/IceSpike.png")
+		atlas.region = Rect2(0, 0, 18, 10)
+		sprite.texture = atlas
+		sprite.rotation = dir.angle()
+	else:
+		sprite.texture = load(Data.PACK + "FX/Projectile/" + ("Fireball.png" if type == "hostile" else "Shuriken.png"))
+		sprite.hframes = maxi(1, int(sprite.texture.get_width() / 16))
+	if evolved.has(type):
+		sprite.texture = Data.icon(type, false, true)
+		sprite.hframes = 1
+		sprite.rotation = dir.angle() + (-3 * PI / 4 if type == "shell" else PI / 4 if type == "frost" else 0)
+	if type != "hostile":
+		shot.speed_scale = projectile_speed_multiplier()
+		shot.hit_radius = 4.0 * weapon_size_multiplier()
+		sprite.scale = Vector2.ONE * weapon_size_multiplier()
+	shot.spin = type in ["shuriken", "sickle"]
+	shot.add_child(sprite)
+	add_child(shot)
+	return shot
+
+func enemy_bullet(pos: Vector2, dir: Vector2, damage: float):
+	var shot = make_shot(pos, dir, "hostile")
+	shot.hostile = true
+	shot.damage = damage
+	shot.speed = 75
+	shot.lifetime = 5
+	shot.modulate = Color("ff937a")
+
+func update_orbits(delta):
+	var rank = ranks.get("orbit", 0)
+	var count = 0 if rank == 0 else 1 + int(rank / 2) + (2 if evolved.has("orbit") else 0) + (8 if ascension == "reaping" else 0) + projectile_bonus()
+	while orbit_sprites.size() < count:
+		var sprite = Sprite2D.new()
+		sprite.texture = load(Data.PACK + "Items/Weapons/Sai/Sprite.png")
+		add_child(sprite)
+		orbit_sprites.append(sprite)
+	orbit_clock += delta * 2.4 * projectile_speed_multiplier() * (2 if ascension == "reaping" else 1)
+	for i in range(orbit_sprites.size()):
+		var angle = orbit_clock + i * TAU / count
+		var pos = player.global_position + Vector2.RIGHT.rotated(angle) * 35 * area_multiplier()
+		orbit_sprites[i].texture = Data.icon("orbit", false, evolved.has("orbit"))
+		orbit_sprites[i].scale = Vector2.ONE * weapon_size_multiplier()
+		orbit_sprites[i].position = pos
+		orbit_sprites[i].rotation = angle
+	if rank > 0 and cooldowns.orbit <= 0:
+		cooldowns.orbit = 0.22 * pow(0.9, ranks.get("haste", 0))
+		for sprite in orbit_sprites:
+			blast(sprite.position, 15 * area_multiplier() * weapon_size_multiplier(), (5 + rank * 3) * power(), false, "orbit")
+
+func update_hazards(delta):
+	for i in range(hazards.size() - 1, -1, -1):
+		var h = hazards[i]
+		h.life -= delta
+		h.age += delta
+		h.tick -= delta
+		if h.life <= 0:
+			h.sprite.queue_free()
+			hazards.remove_at(i)
+		else:
+			# The pack contains twelve 8x12 frames: ignition, flame, then embers.
+			# Animation runs independently of the 0.4-second damage interval.
+			if h.life < 1.0 / 3.0:
+				h.sprite.frame = mini(11, 8 + int((1.0 / 3.0 - h.life) * 12.0))
+			elif h.age < 0.25:
+				h.sprite.frame = mini(2, int(h.age * 12.0))
+			else:
+				h.sprite.frame = 3 + int((h.age - 0.25) * 12.0) % 5
+			if h.tick <= 0:
+				h.tick = 0.4
+				blast(h.sprite.position, h.radius, h.damage, false, "fire")
+
+func blast(pos: Vector2, radius: float, damage: float, visual: bool = true, source: String = "egg"):
+	for enemy in enemies:
+		if is_instance_valid(enemy) and not enemy.dead and pos.distance_to(enemy.global_position) < radius + enemy.radius:
+			deal_damage(enemy, damage, pos.direction_to(enemy.global_position), source)
+	if visual:
+		effect(pos, "FX/Elemental/Explosion/SpriteSheet.png", Vector2i(40, 40), 0.35, radius / 20.0)
+
+func enemy_died(enemy):
+	kills += 1
+	if items.get("blood_seed", 0) > 0 and kills % 15 == 0:
+		player.hp = minf(player.max_hp, player.hp + 3 * items.blood_seed)
+	if items.get("powder", 0) > 0 and kills % 8 == 0:
+		# Deferred explosions avoid recursive death chains inside the hit iteration.
+		powder_burst.call_deferred(enemy.global_position)
+	drop("xp", enemy.global_position, 5 if enemy.kind == "tank" else 3)
+	if enemy.elite:
+		drop("chest", enemy.global_position, 0)
+		coins += 10
+	if enemy.boss:
+		guardians_defeated += 1
+		coins += 30
+		drop("magnet", enemy.global_position + Vector2(15, 0), 1)
+		if enemy.final_guardian:
+			final_boss_dead = true
+	elif rng.randf() < 0.08:
+		drop("heal", enemy.global_position, 12)
+	elif rng.randf() < 0.24:
+		drop("gold", enemy.global_position, 1)
+
+func drop(type: String, pos: Vector2, amount: int):
+	# Merge XP at the pickup cap; no experience is silently discarded.
+	if type == "xp" and get_tree().get_nodes_in_group("run_pickups").size() > 220:
+		for item in get_tree().get_nodes_in_group("run_pickups"):
+			if item.kind == "xp":
+				item.value += amount
+				return
+	var pickup = Pickup.new()
+	pickup.run = self
+	pickup.kind = type
+	pickup.value = amount
+	pickup.chest_free = type == "chest" and amount == 0
+	pickup.position = pos
+	var sprite = Sprite2D.new()
+	sprite.name = "Sprite"
+	var path = "res://assets/bone.png"
+	match type:
+		"gold": path = Data.PACK + "Items/Treasure/GoldCoin.png"
+		"chest": path = Data.PACK + "Items/Treasure/LittleTreasureChest.png"
+		"heal": path = Data.PACK + "Items/Potion/Heart.png"
+		"magnet": path = "res://assets/Coop/magnet.png"
+	sprite.texture = load(path)
+	if type == "chest":
+		sprite.hframes = 2
+		if pickup.chest_free:
+			sprite.modulate = Color("9be7e0")
+	pickup.add_child(sprite)
+	pickup.add_to_group("run_pickups")
+	add_child(pickup)
+	return pickup
+
+func collect(item):
+	play_sound("pickup")
+	match item.kind:
+		"xp": player.gain_xp(maxi(1, roundi(item.value * (1 + ranks.get("magnet", 0) * 0.1 + items.get("compass", 0) * 0.12))))
+		"gold": coins += item.value
+		"heal": player.hp = minf(player.max_hp, player.hp + item.value)
+		"magnet":
+			for pickup in get_tree().get_nodes_in_group("run_pickups"):
+				if pickup.kind == "xp" or pickup.kind == "gold":
+					pickup.pulled = true
+			ui.announce("FORAGER'S CALL", "All experience and coins are coming to you.")
+		"chest":
+			play_sound("chest")
+			player.hp = minf(player.max_hp, player.hp + items.get("lunch", 0) * 12)
+			if ascension == "":
+				for key in Data.ASCENSIONS:
+					if ascension_ready(key):
+						ascension = key
+						pending_ascension = key
+						ui.refresh_inventory()
+						return
+			for weapon in Data.EVOLUTIONS:
+				var recipe = Data.EVOLUTIONS[weapon]
+				if ranks.get(weapon, 0) >= 5 and ranks.get(recipe[0], 0) >= 1 and not evolved.has(weapon):
+					evolved[weapon] = true
+					pending_evolutions.append(weapon)
+					ui.refresh_inventory()
+					ui.announce("EVOLVED: " + recipe[1].to_upper(), "Your build has transformed.")
+					return
+			pending_treasures += 1
+			ui.announce("TREASURE FOUND", "A random item awaits.")
+
+func owned_count(weapons: bool) -> int:
+	var count = 0
+	for key in ranks:
+		if ranks[key] > 0 and (key in Data.WEAPONS) == weapons:
+			count += 1
+	return count
+
+func eligible_upgrades() -> Array:
+	var pool: Array = []
+	for key in Data.UPGRADES:
+		if ranks.get(key, 0) >= Data.UPGRADES[key][3] or banned.has(key):
+			continue
+		var weapon = key in Data.WEAPONS
+		var limit = Data.slot_limit(save, weapon)
+		if ranks.get(key, 0) == 0 and owned_count(weapon) >= limit:
+			continue
+		pool.append(key)
+	return pool
+
+func roll_rarity() -> int:
+	var roll = rng.randf()
+	var luck = items.get("clover", 0) * 0.06
+	if roll < 0.05 + luck * 0.25:
+		return 2
+	if roll < 0.30 + luck:
+		return 1
+	return 0
+
+func show_upgrades():
+	offer_kind = "upgrade"
+	play_sound("upgrade")
+	var pool = eligible_upgrades()
+	offers.clear()
+	offer_rarities.clear()
+	# The opening draft always includes a new weapon, if one remains eligible.
+	if owned_count(true) < 2:
+		var weapons = pool.filter(func(key): return key in Data.WEAPONS and ranks.get(key, 0) == 0)
+		if not weapons.is_empty():
+			var key = weapons[rng.randi_range(0, weapons.size() - 1)]
+			offers.append(key)
+			pool.erase(key)
+	while offers.size() < 3 and not pool.is_empty():
+		offers.append(pool.pop_at(rng.randi_range(0, pool.size() - 1)))
+	for key in offers:
+		offer_rarities[key] = roll_rarity() if ranks.get(key, 0) > 0 or key == "projectile_count" else 0
+	if offers.is_empty():
+		offers = ["feast", "gold"]
+	ui.show_choices()
+	get_tree().paused = true
+
+func show_treasure():
+	offer_kind = "item"
+	play_sound("upgrade")
+	offers.clear()
+	offer_rarities.clear()
+	var pool = Data.ITEMS.keys().filter(func(key): return items.get(key, 0) < 3)
+	while offers.size() < 1 and not pool.is_empty():
+		var weights: Array[float] = []
+		var total = 0.0
+		for key in pool:
+			var weight = [6.0, 3.0, 1.0][Data.ITEMS[key][3]]
+			weight *= 1 + items.get("clover", 0) * 0.25 if Data.ITEMS[key][3] > 0 else 1.0
+			weights.append(weight)
+			total += weight
+		var roll = rng.randf() * total
+		var selected = pool.size() - 1
+		for i in range(pool.size()):
+			roll -= weights[i]
+			if roll <= 0:
+				selected = i
+				break
+		var key = pool.pop_at(selected)
+		offers.append(key)
+		offer_rarities[key] = Data.ITEMS[key][3]
+	if offers.is_empty():
+		offers = ["gold"]
+	ui.show_chest_reward()
+	get_tree().paused = true
+
+func offered_rank(key: String) -> int:
+	return mini(5, ranks.get(key, 0) + 1 + offer_rarities.get(key, 0))
+
+func choose_upgrade(key: String):
+	if not offers.has(key):
+		return
+	var previously_active: Array[String] = []
+	for synergy in Data.SYNERGIES:
+		if synergy_active(synergy):
+			previously_active.append(synergy)
+	play_sound("select")
+	if key == "feast":
+		player.hp = minf(player.max_hp, player.hp + 30)
+	elif key == "gold":
+		coins += maxi(15, last_chest_paid) if offer_kind == "item" else 15
+	elif offer_kind == "item":
+		items[key] = mini(3, items.get(key, 0) + 1)
+		ui.announce(Data.ITEMS[key][0].to_upper(), "Stack %d / 3  |  %s" % [items[key], Data.ITEMS[key][1]])
+	else:
+		var old_rank = ranks.get(key, 0)
+		ranks[key] = offered_rank(key)
+		if key == "vitality":
+			var gain = (ranks[key] - old_rank) * 20
+			player.max_hp += gain
+			player.hp = minf(player.max_hp, player.hp + gain)
+		player.movement_speed = 100 * (1 + ranks.get("speed", 0) * 0.08)
+	if offer_kind == "item":
+		pending_treasures = maxi(0, pending_treasures - 1)
+	else:
+		pending_levels = maxi(0, pending_levels - 1)
+	var activated: Array[String] = []
+	for synergy in Data.SYNERGIES:
+		if synergy_active(synergy) and not previously_active.has(synergy):
+			activated.append(Data.SYNERGIES[synergy][0])
+	if not activated.is_empty():
+		ui.announce("SYNERGY ACTIVE", " + ".join(activated) + "  /  Details in ESC > Synergies")
+		play_sound("upgrade")
+	offers.clear()
+	ui.refresh_inventory()
+	ui.close_modal()
+	get_tree().paused = false
+
+func reroll():
+	if rerolls <= 0 or offer_kind == "item":
+		return
+	rerolls -= 1
+	if offer_kind == "item":
+		show_treasure()
+	else:
+		show_upgrades()
+
+func banish(key: String):
+	if offer_kind != "upgrade" or banishes <= 0 or not Data.UPGRADES.has(key) or not offers.has(key):
+		return
+	banishes -= 1
+	banned.append(key)
+	show_upgrades()
+
+func skip_offer():
+	if skips <= 0 or offer_kind != "upgrade":
+		return
+	skips -= 1
+	pending_levels = maxi(0, pending_levels - 1)
+	offers.clear()
+	ui.close_modal()
+	get_tree().paused = false
+
+func finish(won: bool):
+	if ended:
+		return
+	ended = true
+	play_sound("evolution" if won else "defeat")
+	gold_earned = int(elapsed / 15) + (50 if won else 0)
+	save.gold += gold_earned
+	save.best = maxi(save.best, int(elapsed))
+	if won:
+		save.wins += 1
+	Data.write_save(save)
+	ui.show_result(won)
+	get_tree().paused = true
+
+func floating_text(pos: Vector2, message: String, color: Color):
+	if damage_labels >= 35:
+		return
+	damage_labels += 1
+	var label = Label.new()
+	label.text = message
+	label.position = pos + Vector2(-7, -18)
+	label.add_theme_font_size_override("font_size", 10)
+	label.modulate = color
+	label.z_index = 20
+	add_child(label)
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(label, "position:y", label.position.y - 18, 0.5)
+	tween.tween_property(label, "modulate:a", 0.0, 0.5)
+	tween.chain().tween_callback(func():
+		damage_labels -= 1
+		label.queue_free())
+
+func _on_mob_timer_timeout():
+	pass
+
+
+func _exit_tree():
+	if is_instance_valid(music):
+		music.stop()
+	for sound in sounds.values():
+		if is_instance_valid(sound):
+			sound.stop()
+
+
+
+func play_sound(key: String):
+	if DisplayServer.get_name() == "headless" or not sounds.has(key):
+		return
+	var now = Time.get_ticks_msec()
+	var gap = 180 if key in ["critical", "pickup", "explosion"] else 100
+	if now - sound_clocks.get(key, -1000) < gap or sounds[key].playing:
+		return
+	sound_clocks[key] = now
+	sounds[key].pitch_scale = randf_range(0.95, 1.05) if key not in ["upgrade", "evolution", "defeat", "select"] else 1.0
+	sounds[key].play()
+
+func separation(enemy) -> Vector2:
+	var force = Vector2.ZERO
+	var cell = Vector2i((enemy.global_position / 32).floor())
+	for y in range(-1, 2):
+		for x in range(-1, 2):
+			for other in crowd_grid.get(cell + Vector2i(x, y), []):
+				if other == enemy or not is_instance_valid(other) or other.dead:
+					continue
+				var offset = enemy.global_position - other.global_position
+				var distance = offset.length()
+				if distance > 0.1 and distance < 17:
+					force += offset / distance * (17 - distance) * 2
+	return force.limit_length(25)
+
+
+
+
+func duration_multiplier() -> float:
+	return 1.0 + ranks.get("duration", 0) * 0.2
+
+func critical_chance() -> float:
+	return minf(0.85, ranks.get("crit", 0) * 0.08 + items.get("lens", 0) * 0.08)
+
+func pickup_radius() -> float:
+	return 45.0 + ranks.get("magnet", 0) * 30 + items.get("magnet_stone", 0) * 25
+
+func armor_value() -> int:
+	return ranks.get("armor", 0) + items.get("bead", 0)
+
+func regeneration() -> float:
+	return ranks.get("regen", 0) * 0.4 + items.get("honey", 0) * 0.3
+
+func dash_recharge() -> float:
+	return 3.0 * pow(0.85, items.get("silk", 0))
+
+func deal_damage(enemy: Node, amount: float, direction: Vector2, source: String):
+	if not is_instance_valid(enemy) or enemy.dead:
+		return
+	amount *= ascension_damage(source)
+	if enemy.elite or enemy.boss:
+		amount *= 1 + items.get("crown", 0) * 0.2
+	if source == "thunder" and enemy.slow_time > 0:
+		amount *= 1.35
+	if source == "fire" and enemy.slow_time > 0 and enemy.steam_lock <= 0:
+		enemy.slow_time = 0
+		enemy.steam_lock = 3.0
+		steam_burst.call_deferred(enemy.global_position, amount)
+	var critical = rng.randf() < critical_chance()
+	if critical:
+		amount *= 2
+	var actual = minf(enemy.hp, amount)
+	damage_totals[source] = damage_totals.get(source, 0.0) + actual
+	enemy.take_damage(amount, direction)
+	if critical:
+		play_sound("critical")
+		effect(enemy.global_position, "FX/Magic/Spark/SpriteSheet.png", Vector2i(30, 35), 0.2, 1.0)
+
+func powder_burst(pos: Vector2):
+	if not ended:
+		blast(pos, 40 * area_multiplier(), 20 * items.get("powder", 0) * power(), true, "powder")
+
+func effect(pos: Vector2, path: String, cell: Vector2i, duration: float, size: float):
+	var sprite = Sprite2D.new()
+	sprite.texture = load(Data.PACK + path)
+	sprite.hframes = maxi(1, sprite.texture.get_width() / cell.x)
+	sprite.vframes = maxi(1, sprite.texture.get_height() / cell.y)
+	sprite.position = pos
+	sprite.scale = Vector2.ONE * size
+	sprite.z_index = 5
+	add_child(sprite)
+	var tween = create_tween()
+	tween.tween_method(func(frame):
+		if is_instance_valid(sprite):
+			sprite.frame = mini(int(frame), sprite.hframes * sprite.vframes - 1), 0.0, float(sprite.hframes * sprite.vframes), duration)
+	tween.tween_callback(sprite.queue_free)
+
+func base_upgrade_preview(key: String) -> String:
+	var before = ranks.get(key, 0)
+	var after = offered_rank(key)
+	match key:
+		"projectile_speed": return "Speed  +%d%% > +%d%%" % [before * 20, after * 20]
+		"projectile_count": return "Extra projectiles  +%d > +%d\nGain +%d this pick" % [before, after, after - before]
+		"projectile_size": return "Size  +%d%% > +%d%%" % [before * 20, after * 20]
+		"egg": return "Eggs  %d > %d\nDamage  %d > %d" % [before, after, 10 + before * 4, 10 + after * 4]
+		"shuriken": return "Blades  %d > %d\nPierce  %d > %d" % [0 if before == 0 else before + 2, after + 2, before + 2, after + 2]
+		"thunder": return "Targets  %d > %d\nDamage  %d > %d" % [0 if before == 0 else before + 1, after + 1, 14 + before * 6, 14 + after * 6]
+		"frost": return "Pierce  %d > %d\nDamage  %d > %d" % [before + 2, after + 2, 9 + before * 4, 9 + after * 4]
+		"sickle": return "Damage  %d > %d\nHits on the return trip" % [14 + before * 6, 14 + after * 6]
+		"shell": return "Damage  %d > %d\nBlast radius  %d > %d" % [22 + before * 9, 22 + after * 9, 26 + before * 3, 26 + after * 3]
+		"fire": return "Damage / tick  %d > %d\nDuration  %.1fs > %.1fs" % [4 + before * 3, 4 + after * 3, 2 + before * 0.5, 2 + after * 0.5]
+		"orbit": return "Blades  %d > %d\nDamage  %d > %d" % [0 if before == 0 else 1 + before / 2, 1 + after / 2, 5 + before * 3, 5 + after * 3]
+		"might": return "Damage bonus  +%d%% > +%d%%" % [before * 20, after * 20]
+		"haste": return "Cooldown  %d%% > %d%%" % [roundi(pow(0.9, before) * 100), roundi(pow(0.9, after) * 100)]
+		"area": return "Area bonus  +%d%% > +%d%%" % [before * 18, after * 18]
+		"speed": return "Speed bonus  +%d%% > +%d%%" % [before * 8, after * 8]
+		"armor": return "Armor  +%d > +%d" % [before, after]
+		"magnet": return "Pickup radius  +%d > +%d\nXP bonus  +%d%% > +%d%%" % [before * 30, after * 30, before * 10, after * 10]
+		"vitality": return "Max health  +%d > +%d\nHeal %d now" % [before * 20, after * 20, (after - before) * 20]
+		"regen": return "Health / sec  +%.1f > +%.1f" % [before * 0.4, after * 0.4]
+		"crit": return "Critical chance  +%d%% > +%d%%" % [before * 8, after * 8]
+		"duration": return "Duration bonus  +%d%% > +%d%%" % [before * 20, after * 20]
+	return ""
+
+func synergy_active(key: String) -> bool:
+	var rule = Data.SYNERGIES[key]
+	return ranks.get(rule[1], 0) > 0 and (items.get(rule[2], 0) > 0 if rule[3] else ranks.get(rule[2], 0) > 0)
+
+func steam_burst(pos: Vector2, amount: float):
+	if ended:
+		return
+	blast(pos, 38 * area_multiplier(), amount * 1.5, false, "steam")
+	effect(pos, "FX/Smoke/SmokeCircular/SpriteSheet.png", Vector2i(24, 14), 0.4, 2.0)
+	play_sound("frost")
+
+func shell_fragments(pos: Vector2, amount: float):
+	if not synergy_active("cluster"):
+		return
+	for i in range(6):
+		var shot = make_shot(pos, Vector2.RIGHT.rotated(i * TAU / 6), "shuriken")
+		shot.source = "cluster"
+		shot.damage = amount * 0.2
+		shot.pierce = 2
+		shot.lifetime = 0.8
+
+func complete_sickle_return(hits: int):
+	if synergy_active("reaper") and hits > 0:
+		var healing = mini(2, hits) * items.get("blood_seed", 0)
+		player.hp = minf(player.max_hp, player.hp + healing)
+		floating_text(player.global_position, "+%d" % healing, Color("8fe0bc"))
+
+func on_dash():
+	play_sound("dash")
+	if synergy_active("wake"):
+		blast(player.global_position, 45 * area_multiplier(), 12 * items.get("bead", 0) * power(), true, "wake")
+
+func setup_audio_buses():
+	for name in ["Music", "SFX"]:
+		if AudioServer.get_bus_index(name) < 0:
+			AudioServer.add_bus()
+			AudioServer.set_bus_name(AudioServer.bus_count - 1, name)
+
+func apply_audio_settings():
+	for entry in [["Music", "music_volume"], ["SFX", "sfx_volume"]]:
+		var index = AudioServer.get_bus_index(entry[0])
+		if index >= 0:
+			var volume = float(save[entry[1]])
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(0.001, volume)))
+			AudioServer.set_bus_mute(index, volume <= 0)
+
+func upgrade_preview(key: String) -> String:
+	var text = base_upgrade_preview(key)
+	if ranks.get(key, 0) == 0 and key in Data.WEAPONS:
+		var lines: Array[String] = []
+		for line in text.split("\n"):
+			if line.contains(" > "):
+				var parts = line.split(" > ")
+				lines.append(parts[0].split("  ")[0] + "  " + parts[1])
+			else:
+				lines.append(line)
+		return "\n".join(lines)
+	return text
+
+func ascension_ready(key: String) -> bool:
+	if ascension != "" or not Data.ASCENSIONS.has(key):
+		return false
+	var rule = Data.ASCENSIONS[key]
+	return guardians_defeated >= 2 and evolved.has(rule[1]) and evolved.has(rule[2]) and ranks.get(rule[3], 0) >= 5 and ranks.get(rule[4], 0) >= 5 and items.get(rule[5], 0) >= 3
+
+func ascension_damage(source: String) -> float:
+	if ascension != "" and source in [Data.ASCENSIONS[ascension][1], Data.ASCENSIONS[ascension][2]]:
+		return 3.0
+	return 1.0
+
+func ascension_cooldown(source: String) -> float:
+	return 0.5 if ascension_damage(source) > 1.0 else 1.0
+
+func ascension_progress(key: String) -> String:
+	var rule = Data.ASCENSIONS[key]
+	var lines: Array[String] = []
+	lines.append("Guardians defeated: %d / 2" % mini(2, guardians_defeated))
+	for weapon in [rule[1], rule[2]]:
+		lines.append(("[OK] " if evolved.has(weapon) else "[NEED] ") + Data.EVOLUTIONS[weapon][1] + " evolution")
+	for tome in [rule[3], rule[4]]:
+		lines.append("%s: rank %d / 5" % [Data.UPGRADES[tome][0], ranks.get(tome, 0)])
+	lines.append("%s: %d / 3 stacks" % [Data.ITEMS[rule[5]][0], items.get(rule[5], 0)])
+	lines.append("ACTIVE for this run" if ascension == key else "Another Ascension already claimed" if ascension != "" else "READY: collect a chest" if ascension_ready(key) else "Complete the recipe, then collect a chest")
+	return "\n".join(lines)
+
+func projectile_bonus() -> int:
+	return clampi(ranks.get("projectile_count", 0), 0, 5)
+
+func projectile_speed_multiplier() -> float:
+	return 1.0 + ranks.get("projectile_speed", 0) * 0.2
+
+func weapon_size_multiplier() -> float:
+	return 1.0 + ranks.get("projectile_size", 0) * 0.2
+
+func chest_price() -> int:
+	# A shorter-run economy: 30, 45, 60...; only paid openings advance it.
+	return 30 + paid_chests * 15
+
+func key_chance() -> float:
+	var count = items.get("key", 0)
+	return float(count) / (count + 10.0)
+
+func nearest_chest(max_distance: float = INF):
+	var nearest = null
+	var distance = max_distance
+	for pickup in get_tree().get_nodes_in_group("run_pickups"):
+		if pickup.kind != "chest" or pickup.opened:
+			continue
+		var d = player.global_position.distance_to(pickup.global_position)
+		if d <= distance:
+			distance = d
+			nearest = pickup
+	return nearest
+
+func try_open_chest(chest = null) -> bool:
+	if ended or get_tree().paused or ui.modal_open or pending_treasures > 0 or not pending_evolutions.is_empty() or pending_ascension != "":
+		return false
+	if chest == null:
+		chest = nearest_chest(30)
+	if not is_instance_valid(chest) or chest.kind != "chest" or chest.opened or chest.is_queued_for_deletion() or chest.run != self or player.global_position.distance_to(chest.global_position) > 30:
+		return false
+	var price = 0 if chest.chest_free else chest_price()
+	if coins < price:
+		ui.announce("NEED %d MORE COINS" % (price-coins), "This chest will wait here.")
+		return false
+	var key_triggered = price > 0 and rng.randf() < key_chance()
+	last_chest_paid = 0 if key_triggered else price
+	last_chest_note = "COOP KEY / FREE OPENING" if key_triggered else "ELITE REWARD / FREE" if chest.chest_free else "%d COINS SPENT" % price
+	coins -= last_chest_paid
+	if last_chest_paid > 0:
+		paid_chests += 1
+	chest.opened = true
+	chest.remove_from_group("run_pickups")
+	chest.get_node("Sprite").frame = 1
+	collect(chest)
+	chest.queue_free()
+	if pending_ascension != "":
+		ui.show_ascension(pending_ascension)
+		pending_ascension = ""
+	elif not pending_evolutions.is_empty():
+		ui.show_evolution(pending_evolutions.pop_front())
+	else:
+		show_treasure()
+	get_tree().paused = true
+	return true
