@@ -14,8 +14,8 @@ func reset_trail(run, bonus: int):
 	run.player.position = Vector2.ZERO
 	run.update_fire_trail()
 func test():
-	preload("res://survival/data.gd").save_path = "user://coop_fire_trail_test.cfg"
-	var run = load("res://world.tscn").instantiate()
+	preload("res://scripts/survival/data.gd").save_path = "user://coop_fire_trail_test.cfg"
+	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	run.set_physics_process(false)
 	run.player.set_physics_process(false)

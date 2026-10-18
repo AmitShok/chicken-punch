@@ -1,5 +1,5 @@
 extends SceneTree
-const Data = preload("res://survival/data.gd")
+const Data = preload("res://scripts/survival/data.gd")
 var failures = 0
 var checks = 0
 func _initialize(): call_deferred("test")
@@ -24,7 +24,7 @@ func test():
 	migrated.set_value("coop", "coins", 999)
 	migrated.save(Data.save_path)
 	check(Data.read_save().gold == 321, "Gold takes precedence over stale legacy coins")
-	var run = load("res://world.tscn").instantiate()
+	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	current_scene = run
 	run.set_physics_process(false)
@@ -45,7 +45,7 @@ func test():
 	root.remove_child(run)
 	run.queue_free()
 	await process_frame
-	var menu = load("res://main_menu.tscn").instantiate()
+	var menu = load("res://scenes/ui/main_menu.tscn").instantiate()
 	root.add_child(menu)
 	current_scene = menu
 	menu.purchase("heart")
@@ -53,7 +53,7 @@ func test():
 	root.remove_child(menu)
 	menu.queue_free()
 	await process_frame
-	run = load("res://world.tscn").instantiate()
+	run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	current_scene = run
 	run.set_physics_process(false)

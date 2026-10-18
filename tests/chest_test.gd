@@ -1,5 +1,5 @@
 extends SceneTree
-const Data = preload("res://survival/data.gd")
+const Data = preload("res://scripts/survival/data.gd")
 var failures = 0
 var checks = 0
 func _initialize(): call_deferred("test")
@@ -16,7 +16,7 @@ func capture(name: String):
 func test():
 	Data.save_path = "user://coop_chest_test.cfg"
 	Data.write_save({"muted":true})
-	var run = load("res://world.tscn").instantiate()
+	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	current_scene = run
 	run.set_physics_process(false)

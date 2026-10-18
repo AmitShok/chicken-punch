@@ -7,8 +7,8 @@ func check(ok: bool, title: String):
 	if not ok: failures += 1
 	print(("PASS: " if ok else "FAIL: ") + title)
 func test():
-	preload("res://survival/data.gd").save_path = "user://coop_fire_test.cfg"
-	var run = load("res://world.tscn").instantiate()
+	preload("res://scripts/survival/data.gd").save_path = "user://coop_fire_test.cfg"
+	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	run.set_physics_process(false)
 	run.player.set_physics_process(false)

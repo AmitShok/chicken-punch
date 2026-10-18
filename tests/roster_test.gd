@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Data = preload("res://survival/data.gd")
+const Data = preload("res://scripts/survival/data.gd")
 var failures = 0
 var checks = 0
 
@@ -37,7 +37,7 @@ func test():
 	var weapons = []
 	for key in Data.CHARACTERS:
 		Data.write_save({"character": key, "coins": 0, "muted": true})
-		var run = load("res://world.tscn").instantiate()
+		var run = load("res://scenes/world/world.tscn").instantiate()
 		root.add_child(run)
 		current_scene = run
 		await process_frame
@@ -69,7 +69,7 @@ func test():
 		run.queue_free()
 		await process_frame
 	Data.write_save({"character": "invalid", "muted": true})
-	var menu = load("res://main_menu.tscn").instantiate()
+	var menu = load("res://scenes/ui/main_menu.tscn").instantiate()
 	root.add_child(menu)
 	current_scene = menu
 	await process_frame

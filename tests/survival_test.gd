@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Data = preload("res://survival/data.gd")
+const Data = preload("res://scripts/survival/data.gd")
 var failures = 0
 
 func check(condition: bool, message: String):
@@ -16,7 +16,7 @@ func _initialize():
 func test():
 	Data.save_path = "user://coop_automated_test.cfg"
 	Data.write_save({"coins": 0, "power": 0, "heart": 0, "best": 0, "wins": 0, "muted": true})
-	var scene = load("res://world.tscn").instantiate()
+	var scene = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	await physics_frame
@@ -80,7 +80,7 @@ func test():
 	root.remove_child(scene)
 	scene.queue_free()
 	await process_frame
-	var fresh = load("res://world.tscn").instantiate()
+	var fresh = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(fresh)
 	current_scene = fresh
 	await physics_frame

@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Chickenpunch"
-run/main_scene="res://main_menu.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/Characters/GameIcon.png"
 
@@ -68,4 +68,4 @@ textures/canvas_textures/default_texture_filter=0
 
 [autoload]
 
-SurvivalInput="*res://survival/input.gd"
+SurvivalInput="*res://scripts/survival/input.gd"

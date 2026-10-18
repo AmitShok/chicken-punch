@@ -1,6 +1,6 @@
 extends SceneTree
-const Data = preload("res://survival/data.gd")
-const UI = preload("res://survival/interface.gd")
+const Data = preload("res://scripts/survival/data.gd")
+const UI = preload("res://scripts/survival/interface.gd")
 var failures = 0
 var checks = 0
 func _initialize(): call_deferred("test")
@@ -25,7 +25,7 @@ func test():
 	check(saved.gold == 1000 and saved.unlocked.has("truffle"),"Legacy balance and selected character are preserved")
 	check(Data.training(saved,"pepper").power==2 and Data.training(saved).heart==1,"Legacy upgrade ranks preserved for every character")
 	Data.write_save({"gold":1000,"muted":true})
-	var menu = load("res://main_menu.tscn").instantiate()
+	var menu = load("res://scenes/ui/main_menu.tscn").instantiate()
 	root.add_child(menu)
 	current_scene = menu
 	check(menu.save.unlocked==["nugget"],"Fresh progression starts with Nugget")
@@ -49,7 +49,7 @@ func test():
 	await capture("coop-progression")
 	remove_scene(menu)
 	await process_frame
-	var run = load("res://world.tscn").instantiate()
+	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	current_scene = run
 	run.set_physics_process(false)

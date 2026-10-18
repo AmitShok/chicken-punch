@@ -1,0 +1,76 @@
+[gd_scene load_steps=12 format=3 uid="uid://c3xct6qsbqlp5"]
+
+[ext_resource type="Texture2D" uid="uid://bn5fo8sjyyy0l" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Dog/SpriteSheet.png" id="1_7k104"]
+[ext_resource type="Script" uid="uid://drav3xny3hpcu" path="res://scripts/actors/enemy.gd" id="1_iifgy"]
+[ext_resource type="PackedScene" uid="uid://dfksnj4krfhaf" path="res://scenes/combat/bone.tscn" id="2_epg4t"]
+[ext_resource type="PackedScene" uid="uid://c3k4se5rw1mkr" path="res://scenes/combat/components/hurt_box.tscn" id="2_qi2p4"]
+[ext_resource type="PackedScene" uid="uid://fo7doynke0dy" path="res://scenes/combat/components/hit_box.tscn" id="3_iifgy"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7k104"]
+atlas = ExtResource("1_7k104")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4gyqm"]
+atlas = ExtResource("1_7k104")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_qi2p4"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7k104")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4gyqm")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7k104"]
+radius = 9.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_epg4t"]
+size = Vector2(16, 14)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3yqyl"]
+size = Vector2(12, 11.5)
+
+[node name="enemy" type="CharacterBody2D" groups=["attack", "enemies"]]
+collision_layer = 7
+collision_mask = 7
+motion_mode = 1
+script = ExtResource("1_iifgy")
+bone_scene = ExtResource("2_epg4t")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(2.5, -2)
+scale = Vector2(1.3125, 1.25)
+sprite_frames = SubResource("SpriteFrames_qi2p4")
+autoplay = "default"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(2, -2)
+shape = SubResource("CircleShape2D_7k104")
+
+[node name="HurtBox" parent="." instance=ExtResource("2_qi2p4")]
+position = Vector2(569, -48)
+collision_layer = 4
+collision_mask = 4
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+position = Vector2(-567, 46)
+shape = SubResource("RectangleShape2D_epg4t")
+
+[node name="HitBox" parent="." groups=["attacks", "enemy_attacks"] instance=ExtResource("3_iifgy")]
+collision_layer = 2
+
+[node name="CollisionShape2D" parent="HitBox" index="0"]
+position = Vector2(2, -2.25)
+shape = SubResource("RectangleShape2D_3yqyl")
+
+[connection signal="hurt" from="HurtBox" to="." method="_on_hurt_box_hurt"]
+
+[editable path="HurtBox"]
+[editable path="HitBox"]

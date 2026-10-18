@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Data = preload("res://survival/data.gd")
+const Data = preload("res://scripts/survival/data.gd")
 var scene: Node
 var steps = 0
 var max_enemies = 0
@@ -13,7 +13,7 @@ func _initialize():
 func start():
 	Data.save_path = "user://coop_soak_test.cfg"
 	Data.write_save({"coins": 0, "muted": true})
-	scene = load("res://world.tscn").instantiate()
+	scene = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	scene.ranks = {"thunder": 5, "frost": 5, "sickle": 5, "shell": 5, "crit": 5, "duration": 5, "magnet": 5, "might": 5}

@@ -1,6 +1,6 @@
 extends SceneTree
-const Data = preload("res://survival/data.gd")
-const Inspection = preload("res://survival/inspection.gd")
+const Data = preload("res://scripts/survival/data.gd")
+const Inspection = preload("res://scripts/survival/inspection.gd")
 var checks = 0
 var failures = 0
 func _initialize():
@@ -13,7 +13,7 @@ func test():
 	Data.save_path = "user://coop_ascension_test.cfg"
 	Data.write_save({"muted":true})
 	for key in Data.ASCENSIONS:
-		var run = load("res://world.tscn").instantiate()
+		var run = load("res://scenes/world/world.tscn").instantiate()
 		root.add_child(run)
 		current_scene = run
 		run.set_physics_process(false)
@@ -71,7 +71,7 @@ func test():
 		run.arsenal.tick(0.01)
 		var projectiles = {}
 		for child in run.get_children():
-			if child.get_script() == preload("res://survival/projectile.gd"):
+			if child.get_script() == preload("res://scripts/survival/projectile.gd"):
 				projectiles[child.source] = projectiles.get(child.source,0)+1
 		if key == "whiteout":
 			check(projectiles.get("frost",0) == 11, "Absolute Zero launches eleven ice shards")
@@ -95,7 +95,7 @@ func test():
 		run.queue_free()
 		await process_frame
 	# All equipment descriptions render without errors at maximum rank/stacks.
-	var run = load("res://world.tscn").instantiate()
+	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	run.set_physics_process(false)
 	for key in Data.UPGRADES: run.ranks[key] = 5

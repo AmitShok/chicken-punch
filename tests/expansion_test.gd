@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Data = preload("res://survival/data.gd")
+const Data = preload("res://scripts/survival/data.gd")
 var scene: Node
 var failures = 0
 var checks = 0
@@ -34,7 +34,7 @@ func clear_targets():
 func test():
 	Data.save_path = "user://coop_expansion_test.cfg"
 	Data.write_save({"muted": true, "coins": 0})
-	scene = load("res://world.tscn").instantiate()
+	scene = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	await physics_frame
@@ -119,7 +119,7 @@ func test():
 	scene.items = {"powder": 1}
 	var previous = scene.get_child_count()
 	scene.shell_fragments(Vector2.ZERO, 100)
-	var fragments = scene.get_children().filter(func(node): return node.get_script() == preload("res://survival/projectile.gd") and node.source == "cluster")
+	var fragments = scene.get_children().filter(func(node): return node.get_script() == preload("res://scripts/survival/projectile.gd") and node.source == "cluster")
 	check(scene.get_child_count() == previous + 6 and fragments.size() == 6, "Cluster Nest spawns six fragments")
 	check(fragments[0].damage == 20 and fragments[0].splash == 0, "Fragments use reduced damage and cannot recursively explode")
 	scene.ranks = {"orbit": 1}
@@ -142,7 +142,7 @@ func test():
 	scene.pending_levels = 0
 	first = target(scene.player.global_position + Vector2(50, 0))
 	scene.arsenal.tick(0.1)
-	var shots = scene.get_children().filter(func(node): return node.get_script() == preload("res://survival/projectile.gd"))
+	var shots = scene.get_children().filter(func(node): return node.get_script() == preload("res://scripts/survival/projectile.gd"))
 	check(shots.any(func(shot): return shot.source == "frost" and shot.slow_duration > 0), "Frost weapon produces slowing projectiles")
 	check(shots.any(func(shot): return shot.source == "sickle" and shot.returning_weapon), "Sickle weapon produces returning projectiles")
 	check(shots.any(func(shot): return shot.source == "shell" and shot.detonates), "Shell weapon produces explosive projectiles")

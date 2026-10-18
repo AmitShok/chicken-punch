@@ -7,3 +7,6 @@
 export_credentials.cfg
 .env
 .env.*
+
+# Local editor backups
+.local/
