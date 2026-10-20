@@ -118,6 +118,7 @@ func build_menu():
 	actions.add_child(options)
 	var quit_button = UI.button("QUIT GAME", _on_exist_button_pressed)
 	quit_button.name = "QuitGame"
+	quit_button.visible = not OS.has_feature("web")
 	quit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	UI.paint_button(quit_button, Color("a4513e"))
 	actions.add_child(quit_button)

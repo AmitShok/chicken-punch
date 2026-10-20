@@ -109,6 +109,12 @@ static func slot_limit(data: Dictionary, weapons: bool) -> int:
 static func read_save() -> Dictionary:
 	var config = ConfigFile.new()
 	config.load(save_path)
+	if OS.has_feature("web"):
+		var stored = JavaScriptBridge.eval("(function(){try{return localStorage.getItem(" + JSON.stringify("chickenpunch:" + save_path) + ");}catch(e){return null;}})()")
+		if stored is String:
+			var browser_config = ConfigFile.new()
+			if browser_config.parse(stored) == OK:
+				config = browser_config
 	var data = {"character": str(config.get_value("coop", "character", "nugget")), "gold": maxi(0, int(config.get_value("coop", "gold", config.get_value("coop", "coins", 0)))), "power": clampi(int(config.get_value("coop", "power", 0)), 0, 5), "heart": clampi(int(config.get_value("coop", "heart", 0)), 0, 5), "best": maxi(0, int(config.get_value("coop", "best", 0))), "wins": maxi(0, int(config.get_value("coop", "wins", 0))), "muted": bool(config.get_value("coop", "muted", false)), "sfx_volume": clampf(float(config.get_value("coop", "sfx_volume", 0.8)), 0, 1), "music_volume": clampf(float(config.get_value("coop", "music_volume", 0.6)), 0, 1)}
 
 	if not CHARACTERS.has(data.character): data.character = "nugget"
@@ -136,6 +142,12 @@ static func write_save(data: Dictionary) -> void:
 	var error = config.save(save_path)
 	if error != OK:
 		push_warning("Could not save coop progression: " + str(error))
+	if OS.has_feature("web"):
+		# The web filesystem flushes asynchronously. Mirror the save synchronously
+		# so refreshing immediately after a purchase or run cannot lose progress.
+		var persisted = JavaScriptBridge.eval("(function(){try{localStorage.setItem(" + JSON.stringify("chickenpunch:" + save_path) + "," + JSON.stringify(config.encode_to_text()) + ");return true;}catch(e){return false;}})()")
+		if persisted != true:
+			push_warning("Browser storage is unavailable; progression may not survive a reload.")
 
 
 

@@ -1,5 +1,7 @@
 # Chickenpunch
 
+For downloadable builds, see the Windows and Web export presets. [Export and hosting instructions](docs/release/EXPORTS.md) describe how to build and run them.
+
 A Godot 4.7 horde-survival game with character progression, evolving weapons, and ten-minute runs.
 
 ## Open the game
