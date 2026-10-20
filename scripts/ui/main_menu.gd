@@ -29,8 +29,9 @@ func build_menu():
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(menu)
 	var frame = PanelContainer.new()
-	frame.custom_minimum_size = Vector2(780, 0)
+	frame.custom_minimum_size = Vector2(840, 0)
 	menu.add_child(frame)
+	UI.book_frame(frame, 0.31 if not options_open and not upgrades_open else 0.0)
 	var box = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	frame.add_child(box)
@@ -38,12 +39,17 @@ func build_menu():
 	masthead.add_theme_constant_override("separation", 12)
 	box.add_child(masthead)
 	masthead.add_child(UI.portrait("nugget", 48))
+	if not options_open and not upgrades_open:
+		var gutter = Control.new()
+		gutter.custom_minimum_size.x = 176
+		masthead.add_child(gutter)
 	var brand = UI.label("OPTIONS" if options_open else "COOP UPGRADES" if upgrades_open else "CHICKENPUNCH", 34)
 	brand.add_theme_color_override("font_color", UI.LEAF)
 	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	masthead.add_child(brand)
 	var stats = HBoxContainer.new()
 	stats.add_theme_constant_override("separation", 32)
+	if not options_open and not upgrades_open: stats.alignment = BoxContainer.ALIGNMENT_END
 	box.add_child(stats)
 	stats.add_child(UI.stat_chip("gold", str(save.gold), "Permanent upgrade gold: 1 per 15 seconds survived, +50 for victory"))
 	stats.add_child(UI.stat_chip("clock", "%02d:%02d" % [save.best / 60, save.best % 60], "Best survival time"))
@@ -58,9 +64,15 @@ func build_menu():
 		box.add_child(back)
 		back.grab_focus()
 		return
-	var roster = HBoxContainer.new()
+	var body = HBoxContainer.new()
+	body.add_theme_constant_override("separation", 40)
+	box.add_child(body)
+	var roster = HBoxContainer.new() if upgrades_open else VBoxContainer.new()
 	roster.add_theme_constant_override("separation", 8)
-	box.add_child(roster)
+	if upgrades_open:
+		box.add_child(roster)
+	else:
+		body.add_child(roster)
 	for key in Data.CHARACTERS:
 		var info = Data.CHARACTERS[key]
 		var card = UI.button(info[0], select_character.bind(key))
@@ -74,16 +86,22 @@ func build_menu():
 				card.add_theme_color_override("icon_" + state + "_color", Color.BLACK)
 		card.expand_icon = true
 		card.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		card.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		card.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP if upgrades_open else VERTICAL_ALIGNMENT_CENTER
+		if not upgrades_open: card.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.add_theme_constant_override("icon_max_width", 48)
 		card.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		card.custom_minimum_size = Vector2(144, 80)
+		card.custom_minimum_size = Vector2(144, 80) if upgrades_open else Vector2(208, 58)
 		card.toggle_mode = true
 		card.button_pressed = preview == key
 		if card.button_pressed:
-			card.add_theme_stylebox_override("pressed", UI.box_style(Color("ffe6a0"), Color("b96332"), 8))
+			card.add_theme_stylebox_override("pressed", UI.paper_style("FrameSelect01b", 8, Color("fff1aa")))
 		card.tooltip_text = ("Locked. " if not save.unlocked.has(key) else "") + "Starts with " + Data.UPGRADES[info[1]][0]
 		roster.add_child(card)
+	if not upgrades_open:
+		box = VBoxContainer.new()
+		box.add_theme_constant_override("separation", 10)
+		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.add_child(box)
 	var selected = Data.CHARACTERS[preview]
 	box.add_child(UI.label(selected[0] + "  /  " + Data.UPGRADES[selected[1]][0], 19))
 	if upgrades_open:
@@ -166,7 +184,7 @@ func build_training_menu(box: VBoxContainer):
 		var card = PanelContainer.new()
 		card.custom_minimum_size.x = 360
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		card.add_theme_stylebox_override("panel", UI.box_style(Color("fff8df"), Color("c4ac79"), 10))
+		card.add_theme_stylebox_override("panel", UI.paper_style("Popup01a", 12))
 		grid.add_child(card)
 		var content = VBoxContainer.new()
 		content.add_theme_constant_override("separation", 4)

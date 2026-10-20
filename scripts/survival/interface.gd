@@ -53,6 +53,32 @@ static func box_style(color: Color = Color("fff1cc"), border: Color = Color("896
 	box.set_content_margin_all(margin)
 	return box
 
+static func paper_style(asset: String = "Popup01a", margin: int = 10, tint: Color = Color.WHITE) -> StyleBoxTexture:
+	var style = StyleBoxTexture.new()
+	style.texture = load("res://assets/ui/travel_book/Sprites/UI_TravelBook_" + asset + ".png")
+	style.set_texture_margin_all(5)
+	style.set_content_margin_all(margin)
+	style.modulate_color = tint
+	return style
+
+static func book_frame(frame: PanelContainer, split: float = 0.0):
+	var padding = StyleBoxEmpty.new()
+	padding.set_content_margin_all(28)
+	frame.add_theme_stylebox_override("panel", padding)
+	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var surface = preload("res://scripts/ui/book_surface.gd").new()
+	surface.split = split
+	# Top-level layout offsets keep decoration outside the container's content padding.
+	frame.add_child(surface)
+	surface.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	surface.set_meta("book_decoration", true)
+	frame.resized.connect(func():
+		surface.position = Vector2.ZERO
+		surface.size = frame.size)
+	frame.sort_children.connect(func():
+		surface.position = Vector2.ZERO
+		surface.size = frame.size)
+
 static func skin() -> Theme:
 	var theme = Theme.new()
 	theme.default_font = ThemeDB.fallback_font
@@ -72,24 +98,24 @@ static func skin() -> Theme:
 				style.border_color = Color("b96332")
 				style.set_border_width_all(3)
 				style.shadow_size = 0
-			theme.set_stylebox(state, type, style)
-	theme.set_stylebox("panel", "PanelContainer", box_style())
+			theme.set_stylebox(state, type, style if state == "focus" else paper_style("FrameSelect01a", 8, Color.WHITE if state == "normal" else Color(1.08, 1.08, 1.08) if state == "hover" else Color("d7bc91") if state == "disabled" else Color("e0bb8b")))
+	theme.set_stylebox("panel", "PanelContainer", paper_style())
 	theme.set_stylebox("panel", "TooltipPanel", box_style(PAPER, GOLD))
 	theme.set_font_size("font_size", "TooltipLabel", 16)
 	theme.set_stylebox("panel", "PopupMenu", box_style(PAPER, GOLD))
 	theme.set_stylebox("hover", "PopupMenu", box_style(Color("f5d781"), GOLD, 4))
 	theme.set_color("font_hover_color", "PopupMenu", INK)
-	theme.set_stylebox("panel", "TabContainer", box_style(Color("f5e5b8"), Color("c5ad76"), 8))
+	theme.set_stylebox("panel", "TabContainer", paper_style("Popup01a", 10))
 	for state in ["tab_selected", "tab_unselected", "tab_hovered"]:
-		theme.set_stylebox(state, "TabContainer", box_style(LEAF if state == "tab_selected" else Color("e7d6a6"), Color("799063"), 7))
-	theme.set_color("font_selected_color", "TabContainer", PAPER)
+		theme.set_stylebox(state, "TabContainer", paper_style("FrameSelect01a", 9, Color("a9c99a") if state == "tab_selected" else Color.WHITE))
+	theme.set_color("font_selected_color", "TabContainer", INK)
 	theme.set_color("font_unselected_color", "TabContainer", INK)
 	theme.set_color("font_hovered_color", "TabContainer", INK)
 	return theme
 
 static func paint_button(item: Button, color: Color, text_color: Color = PAPER):
 	for state in ["normal", "hover", "pressed"]:
-		item.add_theme_stylebox_override(state, box_style(color.lightened(0.12) if state == "hover" else color.darkened(0.12) if state == "pressed" else color, color.darkened(0.3), 8))
+		item.add_theme_stylebox_override(state, paper_style("FrameSelect01a", 8, color.lightened(0.2) if state == "hover" else color.darkened(0.12) if state == "pressed" else color))
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		item.add_theme_color_override(state, text_color)
 
@@ -180,7 +206,7 @@ func _ready():
 	inventory_panel = PanelContainer.new()
 	inventory_panel.position = Vector2(14, 65)
 	inventory_panel.custom_minimum_size = Vector2(202, 0)
-	inventory_panel.add_theme_stylebox_override("panel", box_style(Color(1.0, 0.94, 0.8, 0.94), Color("896346"), 10))
+	inventory_panel.add_theme_stylebox_override("panel", paper_style("Popup01a", 10))
 	root.add_child(inventory_panel)
 	inventory_box = VBoxContainer.new()
 	inventory_box.add_theme_constant_override("separation", 6)
@@ -433,7 +459,7 @@ func panel(title: String, subtitle: String) -> VBoxContainer:
 	modal.add_child(center)
 	var frame = PanelContainer.new()
 	frame.custom_minimum_size = Vector2(928, 0)
-	frame.add_theme_stylebox_override("panel", box_style(PAPER, Color("896346"), 14))
+	book_frame(frame)
 	center.add_child(frame)
 	var box = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
@@ -472,7 +498,7 @@ func show_choices():
 		var card_frame = PanelContainer.new()
 		card_frame.custom_minimum_size = Vector2(226, 0)
 		card_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		card_frame.add_theme_stylebox_override("panel", box_style([Color("fff8df"), Color("e1f0d9"), Color("f0dff2")][rarity], tint, 12))
+		card_frame.add_theme_stylebox_override("panel", paper_style("Popup01a", 12, [Color.WHITE, Color("c9efbf"), Color("e4c9ef")][rarity]))
 		body.add_child(card_frame)
 		var card = VBoxContainer.new()
 		card.add_theme_constant_override("separation", 8)
@@ -766,4 +792,15 @@ static func add_options_pages(tabs: TabContainer, settings: Dictionary, apply_au
 	credits.add_child(label("CHICKENPUNCH", 24))
 	credits.add_child(label("Pixel art", 19))
 	credits.add_child(label("ChickenPack\nNinja Adventure / Pixel-boy & AAA", 18))
+	credits.add_child(label("Travel Book Lite / Crusenho Agus Hennihuno\ncrusenho.itch.io/complete-ui-book-styles-pack\nUI sprites resized with nine-slicing and tinted in-engine; original art unchanged.", 16))
 	credits.add_child(label("Additional pixel art created in Aseprite.", 16))
+
+	var effects_page = scroll_page(tabs, "Effects")
+	var feedback_toggle = CheckButton.new()
+	feedback_toggle.text = "Combat motion effects"
+	feedback_toggle.button_pressed = settings.get("combat_feedback", true)
+	feedback_toggle.toggled.connect(func(value):
+		settings.combat_feedback = value
+		Data.write_save(settings))
+	effects_page.add_child(feedback_toggle)
+	effects_page.add_child(label("Gentle camera impacts, dash trails and enemy recoil. Disable for reduced motion.", 16))

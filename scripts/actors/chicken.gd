@@ -71,6 +71,7 @@ func take_damage(amount: float):
 	invulnerability = 0.8
 	if is_instance_valid(run):
 		run.play_sound("hit")
+		run.feedback.kick(2.0)
 		run.floating_text(global_position, "-" + str(int(maxf(1, amount - armor))), Color("ff8c87"))
 	if hp <= 0:
 		is_dead = true

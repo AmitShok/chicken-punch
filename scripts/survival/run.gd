@@ -7,6 +7,7 @@ const Interface = preload("res://scripts/survival/interface.gd")
 const ENEMY = preload("res://scenes/actors/enemy.tscn")
 const Arsenal = preload("res://scripts/survival/arsenal.gd")
 const DURATION = 600.0
+var feedback: Node2D
 var arsenal: RefCounted
 var ascension = ""
 var pending_ascension = ""
@@ -67,6 +68,9 @@ func _ready():
 	player.run = self
 	arsenal = Arsenal.new(self)
 	save = Data.read_save()
+	feedback = preload("res://scripts/survival/feedback.gd").new()
+	feedback.run = self
+	add_child(feedback)
 	var character = save.get("character", "nugget")
 	if not Data.CHARACTERS.has(character):
 		character = "nugget"
@@ -97,7 +101,7 @@ func _ready():
 	if DisplayServer.get_name() != "headless":
 		music.play()
 	var clips = {
-		"hit": ["Hit & Impact/Hit1.wav", -12], "pickup": ["Bonus/Coin.wav", -26],
+		"hit": ["Hit & Impact/Hit1.wav", -12], "impact": ["Hit & Impact/Hit2.wav", -29], "pickup": ["Bonus/Coin.wav", -26],
 		"upgrade": ["Bonus/PowerUp1.wav", -14], "evolution": ["Bonus/PowerUp2.wav", -10],
 		"egg": ["Whoosh & Slash/Launch.wav", -23], "shuriken": ["Whoosh & Slash/Slash2.wav", -23],
 		"fire": ["Elemental/Fire2.wav", -28], "orbit": ["Whoosh & Slash/Slash.wav", -28],
@@ -392,6 +396,7 @@ func blast(pos: Vector2, radius: float, damage: float, visual: bool = true, sour
 		effect(pos, "FX/Elemental/Explosion/SpriteSheet.png", Vector2i(40, 40), 0.35, radius / 20.0)
 
 func enemy_died(enemy):
+	feedback.defeated(enemy)
 	kills += 1
 	if items.get("blood_seed", 0) > 0 and kills % 15 == 0:
 		player.hp = minf(player.max_hp, player.hp + 3 * items.blood_seed)

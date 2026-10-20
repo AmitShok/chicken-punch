@@ -22,6 +22,7 @@ var attack_clock = 2.0
 var windup = 0.0
 var attack_target = Vector2.ZERO
 var flash = 0.0
+var rest_scale = Vector2.ONE
 var slow_time = 0.0
 var steam_lock = 0.0
 var slow_factor = 1.0
@@ -80,6 +81,7 @@ func configure(director: Node, type: String, champion: bool = false):
 		movement_speed *= 1.12
 		$Sprite2D.scale = Vector2(1.5, 1.5)
 		radius = 13
+	rest_scale = $Sprite2D.scale
 	base_hp = hp
 	base_damage = damage * sqrt(run.difficulty)
 	max_hp = hp
@@ -104,6 +106,7 @@ func _physics_process(delta):
 	steam_lock = maxf(0, steam_lock - delta)
 	slow_time = maxf(0, slow_time - delta)
 	flash = maxf(0, flash - delta)
+	$Sprite2D.scale = $Sprite2D.scale.lerp(rest_scale, minf(1, delta * 22))
 	$Sprite2D.modulate = Color(3, 3, 3) if flash > 0 else (Color("9be5ff") if slow_time > 0 else Color("ffd879") if elite else Color.WHITE)
 	var player = run.player
 	var offset = player.global_position - global_position
@@ -146,7 +149,10 @@ func take_damage(amount: float, direction: Vector2 = Vector2.ZERO):
 	if dead:
 		return
 	hp -= amount
+	run.play_sound("impact")
 	flash = 0.08
+	if run.save.get("combat_feedback", true):
+		$Sprite2D.scale = rest_scale * Vector2(1.16, 0.84)
 	knockback_velocity = direction * (25 if boss else 95)
 	run.floating_text(global_position, str(int(amount)), Color("fff0c2"))
 	if hp <= 0:
