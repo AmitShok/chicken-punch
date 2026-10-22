@@ -147,7 +147,7 @@ func test():
 	check(shots.any(func(shot): return shot.source == "sickle" and shot.returning_weapon), "Sickle weapon produces returning projectiles")
 	check(shots.any(func(shot): return shot.source == "shell" and shot.detonates), "Shell weapon produces explosive projectiles")
 	check(scene.damage_totals.get("thunder", 0) > 0, "Lightning weapon deals damage")
-	check(scene.sounds.size() == 18 and AudioServer.get_bus_index("SFX") >= 0, "All 18 sound events load and route to a dedicated effects bus")
+	check(scene.sounds.size() == 19 and scene.sounds.has("impact") and scene.sounds.values().all(func(sound): return sound.stream != null and sound.bus == "SFX"), "All 19 sound events load and route to the effects bus")
 	scene.save.sfx_volume = 0
 	scene.apply_audio_settings()
 	check(AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX")), "Effects slider can mute SFX independently")

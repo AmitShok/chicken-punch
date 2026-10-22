@@ -23,6 +23,13 @@ var windup = 0.0
 var attack_target = Vector2.ZERO
 var flash = 0.0
 var rest_scale = Vector2.ONE
+var knockback_lock = 0.0
+var last_impact_direction = Vector2.ZERO
+var impact_lock = 0.0
+var health_reveal = 0.0
+var health_trail = 1.0
+var health_trail_delay = 0.0
+var hit_material: ShaderMaterial
 var slow_time = 0.0
 var steam_lock = 0.0
 var slow_factor = 1.0
@@ -36,6 +43,9 @@ func _ready():
 	$HitBox.monitorable = false
 	$HitBox.collision_layer = 0
 	$Sprite2D.scale = Vector2.ONE
+	hit_material = ShaderMaterial.new()
+	hit_material.shader = preload("res://assets/shaders/hit_flash.gdshader")
+	$Sprite2D.material = hit_material
 
 func configure(director: Node, type: String, champion: bool = false):
 	run = director
@@ -105,9 +115,8 @@ func _physics_process(delta):
 	age += delta
 	steam_lock = maxf(0, steam_lock - delta)
 	slow_time = maxf(0, slow_time - delta)
-	flash = maxf(0, flash - delta)
-	$Sprite2D.scale = $Sprite2D.scale.lerp(rest_scale, minf(1, delta * 22))
-	$Sprite2D.modulate = Color(3, 3, 3) if flash > 0 else (Color("9be5ff") if slow_time > 0 else Color("ffd879") if elite else Color.WHITE)
+	update_feedback(delta)
+	$Sprite2D.modulate = Color("9be5ff") if slow_time > 0 else Color("ffd879") if elite else Color.WHITE
 	var player = run.player
 	var offset = player.global_position - global_position
 	var distance = offset.length()
@@ -145,15 +154,25 @@ func _physics_process(delta):
 		queue_free()
 	queue_redraw()
 
-func take_damage(amount: float, direction: Vector2 = Vector2.ZERO):
+func take_damage(amount: float, direction: Vector2 = Vector2.ZERO, knockback_interval: float = 0.16):
 	if dead:
 		return
+	health_trail = maxf(health_trail, hp / max_hp)
+	health_trail_delay = 0.18
+	health_reveal = 1.6
 	hp -= amount
 	run.play_sound("impact")
 	flash = 0.08
 	if run.save.get("combat_feedback", true):
 		$Sprite2D.scale = rest_scale * Vector2(1.16, 0.84)
-	knockback_velocity = direction * (25 if boss else 95)
+	if not direction.is_zero_approx():
+		last_impact_direction = direction.normalized()
+		if knockback_lock <= 0:
+			knockback_velocity = last_impact_direction * (25 if boss else 95)
+			knockback_lock = knockback_interval
+	if impact_lock <= 0:
+		run.feedback.impact(global_position, last_impact_direction)
+		impact_lock = 0.10
 	run.floating_text(global_position, str(int(amount)), Color("fff0c2"))
 	if hp <= 0:
 		dead = true
@@ -166,11 +185,29 @@ func _on_hurt_box_hurt(amount, angle):
 func _draw():
 	if elite or boss:
 		draw_arc(Vector2.ZERO, radius + 3, 0, TAU, 24, Color("ffd879"), 1)
-		draw_rect(Rect2(-18, -radius - 10, 36, 3), Color("32283e"))
-		draw_rect(Rect2(-18, -radius - 10, 36 * maxf(0, hp / max_hp), 3), Color("ef797c"))
+	if elite or boss or (health_reveal > 0 and hp < max_hp):
+		var width = 36.0 if elite or boss else 18.0
+		var origin = Vector2(-width / 2, -radius - 8)
+		draw_rect(Rect2(origin - Vector2.ONE, Vector2(width + 2, 4)), Color("32283e"))
+		draw_rect(Rect2(origin, Vector2(width * health_trail, 2)), Color("f5c957"))
+		draw_rect(Rect2(origin, Vector2(width * maxf(0, hp / max_hp), 2)), Color("ef797c"))
 	if windup > 0:
 		draw_arc(Vector2.ZERO, radius + 7 + windup * 12, 0, TAU, 24, Color("ff795e"), 2)
 
 func apply_slow(duration: float, factor: float):
 	slow_time = maxf(slow_time, duration)
 	slow_factor = factor if slow_time <= duration else minf(slow_factor, factor)
+
+func update_feedback(delta: float):
+	knockback_lock = maxf(0, knockback_lock - delta)
+	impact_lock = maxf(0, impact_lock - delta)
+	health_reveal = maxf(0, health_reveal - delta)
+	health_trail_delay = maxf(0, health_trail_delay - delta)
+	flash = maxf(0, flash - delta)
+	var motion = run.save.get("combat_feedback", true)
+	$Sprite2D.scale = $Sprite2D.scale.lerp(rest_scale, minf(1, delta * 22)) if motion else rest_scale
+	hit_material.set_shader_parameter("flash_amount", minf(1, flash / 0.035))
+	if not motion:
+		health_trail = maxf(0, hp / max_hp)
+	elif health_trail_delay <= 0:
+		health_trail = move_toward(health_trail, maxf(0, hp / max_hp), delta * 2.5)

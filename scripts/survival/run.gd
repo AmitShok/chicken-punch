@@ -303,6 +303,7 @@ func spawn_fire_patch(pos: Vector2):
 func make_shot(pos: Vector2, dir: Vector2, type: String):
 	var shot = Shot.new()
 	shot.run = self
+	shot.z_index = 1
 	shot.position = pos
 	shot.direction = dir
 	shot.source = type
@@ -335,6 +336,7 @@ func make_shot(pos: Vector2, dir: Vector2, type: String):
 	shot.spin = type in ["shuriken", "sickle"]
 	shot.add_child(sprite)
 	add_child(shot)
+	feedback.launch(pos, dir, type)
 	return shot
 
 func enemy_bullet(pos: Vector2, dir: Vector2, damage: float):
@@ -735,7 +737,7 @@ func deal_damage(enemy: Node, amount: float, direction: Vector2, source: String)
 		amount *= 2
 	var actual = minf(enemy.hp, amount)
 	damage_totals[source] = damage_totals.get(source, 0.0) + actual
-	enemy.take_damage(amount, direction)
+	enemy.take_damage(amount, direction, 0.08 if source in ["sickle", "orbit"] else 0.16)
 	if critical:
 		play_sound("critical")
 		effect(enemy.global_position, "FX/Magic/Spark/SpriteSheet.png", Vector2i(30, 35), 0.2, 1.0)

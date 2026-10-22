@@ -214,7 +214,7 @@ func _ready():
 	refresh_inventory()
 	health_text = overlay("", Vector2(390, 568), Vector2(180, 20), 14)
 	health_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	health = progress(Vector2(390, 590), Vector2(180, 8), Color("e76a76"))
+	health = progress(Vector2(390, 590), Vector2(180, 8), Color("e76a76"), true)
 	xp = progress(Vector2(14, 620), Vector2(932, 8), Color("75aeff"))
 	level_text = overlay("", Vector2(14, 590), Vector2(270, 26), 15)
 	loadout = overlay("", Vector2(330, 595), Vector2(300, 22), 14)
@@ -244,8 +244,8 @@ func overlay(text: String, pos: Vector2, dimensions: Vector2, size: int) -> Labe
 	root.add_child(item)
 	return item
 
-func progress(pos: Vector2, dimensions: Vector2, color: Color) -> ProgressBar:
-	var bar = ProgressBar.new()
+func progress(pos: Vector2, dimensions: Vector2, color: Color, damage_feedback: bool = false) -> ProgressBar:
+	var bar = preload("res://scripts/ui/damage_bar.gd").new() if damage_feedback else ProgressBar.new()
 	bar.position = pos
 	bar.size = dimensions
 	bar.show_percentage = false
@@ -376,6 +376,7 @@ func _process(delta):
 		var cost = 0 if nearby_chest.chest_free else run.chest_price()
 		chest_prompt.text = "E / Open  / FREE" if cost == 0 else "E / Open  / %d coins" % cost if run.coins >= cost else "%d coins needed  /  Have %d" % [cost,run.coins]
 	hud.tooltip_text = "%d kills" % run.kills
+	health.motion_enabled = run.save.get("combat_feedback", true)
 	health.max_value = p.max_hp
 	health.value = p.hp
 	health_text.text = "%d / %d HP" % [p.hp, p.max_hp]
@@ -803,4 +804,4 @@ static func add_options_pages(tabs: TabContainer, settings: Dictionary, apply_au
 		settings.combat_feedback = value
 		Data.write_save(settings))
 	effects_page.add_child(feedback_toggle)
-	effects_page.add_child(label("Gentle camera impacts, dash trails and enemy recoil. Disable for reduced motion.", 16))
+	effects_page.add_child(label("Camera impacts, directional puffs, dash trails, recoil and health-bar trails. Disable for reduced motion.", 16))

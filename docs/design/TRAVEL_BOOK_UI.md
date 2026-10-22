@@ -6,6 +6,6 @@ The character menu uses a leather cover and separate parchment pages, with the r
 
 Combat feedback adds visual-only enemy squash, directional defeat echoes, dash afterimages, bounded camera impacts on player damage and boss defeats, and throttled enemy-hit audio from Ninja Adventure. Echoes are capped at 24 and expire in 0.18–0.24 seconds; camera displacement is at most three world pixels and rapidly decays. No global hit-stop or combat timing changes were introduced. Effects pause with gameplay. Options > Effects persists a reduced-motion toggle for the new motion effects. Existing core hit flashes and essential telegraphs remain.
 
-Video reference: GameMaker, “Why Archvale Feels Amazing (Add Game Juice)”, https://www.youtube.com/watch?v=vN3fQZvfj4Q. Its title, author and description were verified; automated caption retrieval returned empty content. The implemented feedback techniques are our design choices, not a claimed transcription or exhaustive recreation of that video.
+Video reference: GameMaker, “Why Archvale Feels Amazing (Add Game Juice)”, https://www.youtube.com/watch?v=vN3fQZvfj4Q. A subsequent browser retry recovered the timestamped transcript and the projectile demonstration. See ARCHVALE_FEEDBACK.md for the techniques applied in the follow-up.
 
 Validation: progression, roster, expansion and dedicated feedback tests; rendered menu, upgrades, pause loadout, reward and compact/full HUD captures. The feedback test checks damage preservation, sprite recoil, effect caps, cleanup, camera bounds, disabled motion and preference persistence.
