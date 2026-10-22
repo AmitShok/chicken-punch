@@ -362,7 +362,8 @@ func update_orbits(delta):
 		orbit_sprites[i].texture = Data.icon("orbit", false, evolved.has("orbit"))
 		orbit_sprites[i].scale = Vector2.ONE * weapon_size_multiplier()
 		orbit_sprites[i].position = pos
-		orbit_sprites[i].rotation = angle
+		# Both guard sprites point up; rotate their blade into the clockwise tangent.
+		orbit_sprites[i].rotation = angle + PI
 	if rank > 0 and cooldowns.orbit <= 0:
 		cooldowns.orbit = 0.22 * pow(0.9, ranks.get("haste", 0))
 		for sprite in orbit_sprites:
