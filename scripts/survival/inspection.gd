@@ -21,7 +21,7 @@ static func describe(run: Node, key: String, item: bool) -> String:
 	else:
 		match key:
 			"projectile_speed": text += "+%d%% projectile travel and orbit rotation speed. Instant lightning and stationary fire do not travel." % (count*20)
-			"projectile_count": text += "+%d shots, sickles, orbit blades or lightning targets. Hot Foot spacing is divided by (1 + bonus), creating a denser trail. Picks grant +1 / +2 / +3 by rarity, capped at +5 total." % count
+			"projectile_count": text += "+%d shots, sickles, orbit blades or lightning targets (Storm Call rank 2+). Hot Foot spacing is divided by (1 + bonus), creating a denser trail. Picks grant +1 / +2 / +3 by rarity, capped at +5 total." % count
 			"projectile_size": text += "+%d%% sprite scale and hit radius. Also affects fire, explosion radii and lightning reach. Multiplies with Wide Wings for area effects." % (count*20)
 			"might": text += "+%d%% damage to all weapons." % (count*20)
 			"haste": text += "Weapon cooldowns multiplied by %.3f (%d%% shorter)." % [pow(0.9,count),roundi((1-pow(0.9,count))*100)]
@@ -32,7 +32,7 @@ static func describe(run: Node, key: String, item: bool) -> String:
 			"vitality": text += "+%d maximum HP. Each rank heals 20 when taken." % (count*20)
 			"regen": text += "Regenerate %.1f HP per second." % (count*0.4)
 			"crit": text += "+%d percentage points critical chance. Total chance: %d%% (85%% cap)." % [count*8, roundi(run.critical_chance()*100)]
-			"duration": text += "+%d%% fire and slow duration." % (count*20)
+			"duration": text += "+%d%% lifetime for Hot Foot / Phoenix Trail fire patches and Frost Quills / Deep Winter slows. Does not change damage per hit, firing speed, or lightning. Rank 5 doubles these durations." % (count*20)
 		for weapon in Data.EVOLUTIONS:
 			if Data.EVOLUTIONS[weapon][0] == key:
 				text += "\n\nEVOLUTION PARTNER\n" + Data.UPGRADES[weapon][0] + " rank 5 + this tome rank 1 + chest = " + Data.EVOLUTIONS[weapon][1]
@@ -73,7 +73,7 @@ static func weapon_effect(run: Node, key: String, rank: int) -> String:
 		"shuriken": return "%d blades per fan; %d pierce. %.1f damage per hit. Fan every %.2fs." % [rank+2+(3 if evolved else 0)+extra,rank+2,(10+rank*4)*power,1.6*cooldown]
 		"fire": return "%.1f damage per tick (every 0.4s). Trail spacing %.1f pixels; stationary patch every %.2fs. Patches last %.2fs. Radius %.1f." % [(4+rank*3)*power,run.fire_spacing(),run.fire_spacing()/100.0,(2+rank*0.5)*run.duration_multiplier(),17*run.area_multiplier()*run.weapon_size_multiplier()*(1.6 if evolved else 1)]
 		"orbit": return "%d orbiting blades. %.1f damage per contact check (every %.2fs)." % [1+int(rank/2)+(2 if evolved else 0)+(8 if run.ascension=="reaping" else 0)+extra,(5+rank*3)*power,0.22*pow(0.9,run.ranks.get("haste",0))]
-		"thunder": return "%d targets per cast. %.1f damage per strike. Cast every %.2fs." % [1+rank+(3 if evolved else 0)+(12 if run.ascension=="whiteout" else 0)+extra,(14+rank*6)*power,2*cooldown]
+		"thunder": return "%d targets per cast. %.1f damage per strike. Cast every %.2fs." % [run.storm_target_count(rank),(14+rank*6)*power,2*cooldown]
 		"frost": return "%d shards; %d pierce. %.1f damage per hit. Cast every %.2fs. Slows by %d%% for %.2fs." % [1+int(rank/2)+(2 if evolved else 0)+(6 if run.ascension=="whiteout" else 0)+extra,2+rank,(9+rank*4)*power,1.35*cooldown,70 if evolved else 45,(3.5 if evolved else 2)*run.duration_multiplier()]
 		"sickle": return "%d returning sickles. %.1f damage per hit. Cast every %.2fs. Can hit each enemy once outbound and once returning." % [(4 if run.ascension=="reaping" else 2 if evolved else 1)+extra,(14+rank*6)*power,1.8*cooldown]
 		"shell": return "%d shells per volley. %.1f damage per explosion. Radius %.1f. Launch every %.2fs." % [1+extra,(22+rank*9)*power,(26+rank*3)*run.area_multiplier()*run.weapon_size_multiplier()*(1.45 if evolved else 1),2.3*cooldown]

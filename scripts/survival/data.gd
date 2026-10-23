@@ -42,12 +42,12 @@ const UPGRADES = {
 	"armor": ["Iron Shell", "Reduce incoming damage by 1. Guard rank 5 + this tome + chest evolves Guard.", PACK + "Items/Potion/MilkPot.png", 5],
 	"magnet": ["Forager", "+30 pickup radius and +10% XP.", PACK + "Items/Object/Bag.png", 5],
 	"vitality": ["Big Heart", "+20 maximum health and heal 20.", PACK + "Items/Potion/Heart.png", 5],
-	"thunder": ["Storm Call", "Lightning jumps between nearby enemies.", PACK + "Items/Scroll/ScrollThunder.png", 5],
+	"thunder": ["Storm Call", "Strikes one enemy at rank 1. Each rank adds damage; chaining starts at rank 2 with one extra target per rank.", PACK + "Items/Scroll/ScrollThunder.png", 5],
 	"frost": ["Frost Quills", "Piercing ice shards slow enemies by 45% for 2 seconds.", PACK + "Items/Scroll/ScrollIce.png", 5],
 	"sickle": ["Harvest Moon", "A spinning sickle returns to you, hitting again on its way back.", PACK + "Items/Tool/Sickle.png", 5],
 	"shell": ["Shell Shock", "Launch explosive shells at the nearest enemy.", PACK + "Items/Resource/Rock.png", 5],
 	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal double damage.", PACK + "Items/Resource/GemYellow.png", 5],
-	"duration": ["Long Summer", "+20% fire duration and slow duration.", PACK + "Items/Scroll/ScrollPlant.png", 5],
+	"duration": ["Long Summer", "Per rank: Hot Foot fire and Frost Quills slows last 20% longer.", PACK + "Items/Scroll/ScrollPlant.png", 5],
 	"regen": ["Second Wind", "Recover 0.4 health per second.", PACK + "Items/Potion/LifePot.png", 5]
 }
 const WEAPONS = ["egg", "shuriken", "fire", "orbit", "thunder", "frost", "sickle", "shell"]

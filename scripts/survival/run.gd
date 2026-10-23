@@ -703,6 +703,12 @@ func separation(enemy) -> Vector2:
 
 
 
+func storm_target_count(rank: int = -1) -> int:
+	if rank < 0: rank = ranks.get("thunder", 0)
+	# Chaining unlocks at rank two, including bonus targets from tomes.
+	if rank <= 1: return maxi(0, rank)
+	return rank + projectile_bonus() + (3 if evolved.has("thunder") else 0) + (12 if ascension == "whiteout" else 0)
+
 func duration_multiplier() -> float:
 	return 1.0 + ranks.get("duration", 0) * 0.2
 
@@ -771,7 +777,7 @@ func base_upgrade_preview(key: String) -> String:
 		"projectile_size": return "Size  +%d%% > +%d%%" % [before * 20, after * 20]
 		"egg": return "Eggs  %d > %d\nDamage  %d > %d" % [before, after, 10 + before * 4, 10 + after * 4]
 		"shuriken": return "Blades  %d > %d\nPierce  %d > %d" % [0 if before == 0 else before + 2, after + 2, before + 2, after + 2]
-		"thunder": return "Targets  %d > %d\nDamage  %d > %d" % [0 if before == 0 else before + 1, after + 1, 14 + before * 6, 14 + after * 6]
+		"thunder": return "Targets  %d > %d\nDamage  %d > %d" % [storm_target_count(before), storm_target_count(after), 14 + before * 6, 14 + after * 6]
 		"frost": return "Pierce  %d > %d\nDamage  %d > %d" % [before + 2, after + 2, 9 + before * 4, 9 + after * 4]
 		"sickle": return "Damage  %d > %d\nHits on the return trip" % [14 + before * 6, 14 + after * 6]
 		"shell": return "Damage  %d > %d\nBlast radius  %d > %d" % [22 + before * 9, 22 + after * 9, 26 + before * 3, 26 + after * 3]
@@ -786,7 +792,7 @@ func base_upgrade_preview(key: String) -> String:
 		"vitality": return "Max health  +%d > +%d\nHeal %d now" % [before * 20, after * 20, (after - before) * 20]
 		"regen": return "Health / sec  +%.1f > +%.1f" % [before * 0.4, after * 0.4]
 		"crit": return "Critical chance  +%d%% > +%d%%" % [before * 8, after * 8]
-		"duration": return "Duration bonus  +%d%% > +%d%%" % [before * 20, after * 20]
+		"duration": return "Fire / slow duration  +%d%% > +%d%%" % [before * 20, after * 20]
 	return ""
 
 func synergy_active(key: String) -> bool:

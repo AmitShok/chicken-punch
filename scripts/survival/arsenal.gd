@@ -22,7 +22,7 @@ func tick(delta: float):
 		match key:
 			"thunder":
 				clocks[key] = 2.0 * haste
-				chain(target, 1 + rank + (3 if evolved else 0) + (12 if run.ascension == "whiteout" else 0) + run.projectile_bonus(), (14 + rank * 6) * run.power())
+				chain(target, run.storm_target_count(rank), (14 + rank * 6) * run.power())
 			"frost":
 				clocks[key] = 1.35 * haste
 				var count = 1 + int(rank / 2) + (2 if evolved else 0) + (6 if run.ascension == "whiteout" else 0) + run.projectile_bonus()

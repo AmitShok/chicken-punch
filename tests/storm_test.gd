@@ -44,4 +44,29 @@ func test():
 	check(targets.all(func(e): return e.hp == 945), "Visual cap never suppresses damage")
 	await create_timer(0.55).timeout
 	check(get_nodes_in_group("sky_strikes").is_empty() and get_nodes_in_group("chain_arcs").is_empty(), "Bolts and arcs clean up after animation")
+	for i in range(2):
+		var enemy = run.spawn_enemy("tank")
+		enemy.position = run.player.position + Vector2(115 + i * 25, 0)
+		enemy.set_physics_process(false)
+		targets.append(enemy)
+	for rank in range(1, 6):
+		run.ranks = {"thunder": rank}
+		for enemy in targets: enemy.hp = 1000
+		run.arsenal.clocks.thunder = 0
+		run.arsenal.tick(0)
+		var damaged = targets.filter(func(e): return e.hp < 1000)
+		check(damaged.size() == rank, "Rank %d hits %d targets" % [rank, rank])
+		check(damaged.all(func(e): return is_equal_approx(e.hp, 1000 - (14 + rank * 6) * run.power())), "Rank %d increases strike damage" % rank)
+		check(preload("res://scripts/survival/inspection.gd").weapon_effect(run, "thunder", rank).begins_with("%d targets" % rank), "Inspection matches rank %d target count" % rank)
+	run.ranks = {"thunder": 1, "projectile_count": 5}
+	for enemy in targets: enemy.hp = 1000
+	run.arsenal.clocks.thunder = 0
+	run.arsenal.tick(0)
+	check(targets.filter(func(e): return e.hp < 1000).size() == 1, "Count tome cannot unlock chaining before rank two")
+	run.ranks.thunder = 2
+	check(run.storm_target_count() == 7, "Count tome adds targets once chaining unlocks")
+	run.evolved["thunder"] = true
+	check(run.storm_target_count() == 10, "Evolution retains three bonus targets")
+	run.ascension = "whiteout"
+	check(run.storm_target_count() == 22, "Whiteout retains twelve bonus targets")
 	quit(1 if failures else 0)
