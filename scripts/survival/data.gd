@@ -47,7 +47,7 @@ const UPGRADES = {
 	"sickle": ["Harvest Moon", "A spinning sickle returns to you, hitting again on its way back.", PACK + "Items/Tool/Sickle.png", 5],
 	"shell": ["Shell Shock", "Launch explosive shells at the nearest enemy.", PACK + "Items/Resource/Rock.png", 5],
 	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal double damage.", PACK + "Items/Resource/GemYellow.png", 5],
-	"duration": ["Long Summer", "Per rank: Hot Foot fire and Frost Quills slows last 20% longer.", PACK + "Items/Scroll/ScrollPlant.png", 5],
+	"duration": ["Long Summer", "Extends the duration of effects such as lingering fire and icy slows by 20% per rank.", PACK + "Items/Scroll/ScrollPlant.png", 5],
 	"regen": ["Second Wind", "Recover 0.4 health per second.", PACK + "Items/Potion/LifePot.png", 5]
 }
 const WEAPONS = ["egg", "shuriken", "fire", "orbit", "thunder", "frost", "sickle", "shell"]

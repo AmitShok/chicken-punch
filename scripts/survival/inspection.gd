@@ -32,7 +32,7 @@ static func describe(run: Node, key: String, item: bool) -> String:
 			"vitality": text += "+%d maximum HP. Each rank heals 20 when taken." % (count*20)
 			"regen": text += "Regenerate %.1f HP per second." % (count*0.4)
 			"crit": text += "+%d percentage points critical chance. Total chance: %d%% (85%% cap)." % [count*8, roundi(run.critical_chance()*100)]
-			"duration": text += "+%d%% lifetime for Hot Foot / Phoenix Trail fire patches and Frost Quills / Deep Winter slows. Does not change damage per hit, firing speed, or lightning. Rank 5 doubles these durations." % (count*20)
+			"duration": text += "+%d%% effect duration. Lingering fire stays active longer and icy slows wear off later. Applies to Hot Foot / Phoenix Trail fire patches and Frost Quills / Deep Winter slows. Rank 5 doubles their duration." % (count*20)
 		for weapon in Data.EVOLUTIONS:
 			if Data.EVOLUTIONS[weapon][0] == key:
 				text += "\n\nEVOLUTION PARTNER\n" + Data.UPGRADES[weapon][0] + " rank 5 + this tome rank 1 + chest = " + Data.EVOLUTIONS[weapon][1]
