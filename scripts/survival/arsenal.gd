@@ -61,14 +61,12 @@ func chain(first: Node, jumps: int, damage: float):
 		var chilled = target.slow_time > 0
 		var pos = target.global_position
 		run.effect(pos, "FX/Elemental/Thunder/SpriteSheet.png", Vector2i(16, 28), 0.35, 1.4 * run.weapon_size_multiplier())
-		if run.evolved.has("thunder"):
-			var storm = Sprite2D.new()
-			storm.texture = preload("res://scripts/survival/data.gd").icon("thunder", false, true)
-			storm.position = pos + Vector2(0,-20)
-			run.add_child(storm)
-			var fade = run.create_tween()
-			fade.tween_property(storm,"modulate:a",0.0,0.35)
-			fade.tween_callback(storm.queue_free)
+		# Limit overlapping columns in endgame builds without limiting chain damage.
+		if run.get_tree().get_nodes_in_group("sky_strikes").size() < 32:
+			var strike = preload("res://scripts/survival/lightning_strike.gd").new()
+			strike.position = pos
+			strike.configure(run.weapon_size_multiplier(), run.evolved.has("thunder"))
+			run.add_child(strike)
 		run.deal_damage(target, damage, Vector2.ZERO, "thunder")
 		var next_target = null
 		var closest = 115.0 * run.area_multiplier() * run.weapon_size_multiplier() * (1.6 if chilled else 1.0)
