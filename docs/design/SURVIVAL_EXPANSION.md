@@ -2,11 +2,13 @@
 
 Implemented 18 October 2026 in the existing chickenpunch-3 project. This follows the initial survival-loop implementation described in Chickenpunch-review.md and supersedes its weapon counts and chest rewards.
 
+Current level caps and unlock rules were updated on October 23; see [Run setup and unlocks](RUN_SETUP_AND_UNLOCKS.md).
+
 ## What changed
 
 - Eight weapons, ten upgrade tomes, twelve treasure items and eight evolutions.
-- Four weapon slots and four tome slots per run. Treasure items use a separate collection and stack up to three times.
-- Common/rare/epic level-up offers grant one/two/three ranks, capped at five. New equipment starts at rank one. Three rerolls, two skips and two banishes help shape a build.
+- Four weapon slots and four tome slots per run. Treasure items use a separate collection and stack up to ten times.
+- Common/rare/epic level-up offers grant one/two/three ranks, capped at ten. New equipment starts at rank one. Three rerolls, two skips and two banishes help shape a build.
 - Readable sans-serif text, a 960×640 interface, rarity-colored cards with before/after values, visible inventory, centered run timer, guardian health and chest directions.
 - A paused build screen includes damage totals excluding overkill, synergy status, evolution recipes, item descriptions, controls and audio settings.
 - Weapon, dash, impact, critical, selection, chest, evolution and defeat effects reuse the downloaded Ninja Adventure audio pack. Music and sound effects have independently saved volume sliders. M toggles master mute. Repeated sounds are throttled with small pitch variations on combat effects.
@@ -16,13 +18,13 @@ Implemented 18 October 2026 in the existing chickenpunch-3 project. This follows
 
 An evolution is a stronger form of an existing weapon, lasting until the run ends. It does not consume another weapon slot, remove its matching tome, or erase your other bonuses.
 
-1. Upgrade a weapon to rank 5.
+1. Upgrade a weapon to rank 10.
 2. Own its matching tome at rank 1 or higher.
 3. Collect a chest. One eligible weapon transforms automatically, and a paused reveal explains exactly what changed.
 
 That chest gives the evolution instead of a treasure-item selection, plus its normal gold. A chest collected before a recipe is ready gives a treasure-item choice; it is not stored for a future evolution. If multiple recipes are ready, one evolves per chest in the recipe order below. Evolutions reset when the run ends; Coop purchases persist.
 
-Example: **Egg Barrage rank 5 + Quick Hatch rank 1 + a chest = Golden Omelette.** It fires three extra eggs per volley, and egg hits gain splash damage. Merely owning Quick Hatch does not evolve the weapon.
+Example: **Egg Barrage rank 10 + Quick Hatch rank 1 + a chest = Golden Omelette.** It fires three extra eggs per volley, and egg hits gain splash damage. Merely owning Quick Hatch does not evolve the weapon.
 
 | Rank-5 weapon | Required tome, rank 1+ | Evolved form | Added effect |
 | --- | --- | --- | --- |
@@ -39,7 +41,7 @@ Press **Escape → Evolutions** for recipes and ready/evolved indicators.
 
 ## Five automatic synergies
 
-Synergies activate immediately when both ingredients are owned. They do not need rank 5 or a chest. A notification announces newly completed combinations; Escape → Synergies shows their status.
+Synergies activate immediately when both ingredients are owned. They do not need rank 10 or a chest. A notification announces newly completed combinations; Escape → Loadout shows their status.
 
 | Combination | Synergy | Behavior and tactical use |
 | --- | --- | --- |

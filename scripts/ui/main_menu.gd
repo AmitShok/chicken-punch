@@ -1,27 +1,26 @@
 extends Control
-
 const Data = preload("res://scripts/survival/data.gd")
 const UI = preload("res://scripts/survival/interface.gd")
 @export var game: PackedScene
 var save: Dictionary
 var menu: Control
-var difficulty_index = 1
-var preview = ""
+var difficulty_index = 0
+var level_id = "meadow"
+var preview = "nugget"
+var page = "home"
+var shop_tab = 0
 var upgrades_open = false
 var options_open = false
 
 func _ready():
 	save = Data.read_save()
 	for child in get_children():
-		if child.name != "Panel":
-			child.hide()
+		if child.name != "Panel": child.hide()
 	theme = UI.skin()
 	preview = save.character
 	build_menu()
 
 func build_menu():
-	if not Data.CHARACTERS.has(save.get("character", "")):
-		save.character = "nugget"
 	if is_instance_valid(menu):
 		remove_child(menu)
 		menu.queue_free()
@@ -29,142 +28,253 @@ func build_menu():
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(menu)
 	var frame = PanelContainer.new()
-	frame.custom_minimum_size = Vector2(840, 0)
+	frame.custom_minimum_size = Vector2(860, 568)
 	menu.add_child(frame)
-	UI.book_frame(frame, 0.31 if not options_open and not upgrades_open else 0.0)
+	UI.book_frame(frame)
 	var box = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", 12)
 	frame.add_child(box)
 	var masthead = HBoxContainer.new()
-	masthead.add_theme_constant_override("separation", 12)
 	box.add_child(masthead)
-	masthead.add_child(UI.portrait("nugget", 48))
-	if not options_open and not upgrades_open:
-		var gutter = Control.new()
-		gutter.custom_minimum_size.x = 176
-		masthead.add_child(gutter)
-	var brand = UI.label("OPTIONS" if options_open else "COOP UPGRADES" if upgrades_open else "CHICKENPUNCH", 34)
-	brand.add_theme_color_override("font_color", UI.LEAF)
-	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	masthead.add_child(brand)
-	var stats = HBoxContainer.new()
-	stats.add_theme_constant_override("separation", 32)
-	if not options_open and not upgrades_open: stats.alignment = BoxContainer.ALIGNMENT_END
-	box.add_child(stats)
-	stats.add_child(UI.stat_chip("gold", str(save.gold), "Permanent upgrade gold: 1 per 15 seconds survived, +50 for victory"))
-	stats.add_child(UI.stat_chip("clock", "%02d:%02d" % [save.best / 60, save.best % 60], "Best survival time"))
-	stats.add_child(UI.stat_chip("trophy", str(save.wins), "Victories"))
-	if options_open:
-		var tabs = TabContainer.new()
-		tabs.name = "OptionsTabs"
-		tabs.custom_minimum_size = Vector2(740, 340)
-		box.add_child(tabs)
-		UI.add_options_pages(tabs, save, apply_options_audio)
-		var back = UI.button("BACK", close_options)
-		box.add_child(back)
-		back.grab_focus()
-		return
-	var body = HBoxContainer.new()
-	body.add_theme_constant_override("separation", 40)
-	box.add_child(body)
-	var roster = HBoxContainer.new() if upgrades_open else VBoxContainer.new()
-	roster.add_theme_constant_override("separation", 8)
-	if upgrades_open:
-		box.add_child(roster)
-	else:
-		body.add_child(roster)
-	for key in Data.CHARACTERS:
-		var info = Data.CHARACTERS[key]
-		var card = UI.button(info[0], select_character.bind(key))
-		var colors = {"nugget": Color("f3d47c"), "pepper": Color("c4d49d"), "whisker": Color("f3bc8f"), "truffle": Color("eeb9ba"), "clover": Color("b8d9c8")}
-		UI.paint_button(card, colors[key], UI.INK)
-		card.name = "Character_" + key
-		card.icon = Data.character_icon(key)
-		# Tint only the portrait, leaving the card and its name readable in every state.
-		if not save.unlocked.has(key):
-			for state in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
-				card.add_theme_color_override("icon_" + state + "_color", Color.BLACK)
-		card.expand_icon = true
-		card.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		card.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP if upgrades_open else VERTICAL_ALIGNMENT_CENTER
-		if not upgrades_open: card.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		card.add_theme_constant_override("icon_max_width", 48)
-		card.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		card.custom_minimum_size = Vector2(144, 80) if upgrades_open else Vector2(208, 58)
-		card.toggle_mode = true
-		card.button_pressed = preview == key
-		if card.button_pressed:
-			card.add_theme_stylebox_override("pressed", UI.paper_style("FrameSelect01b", 8, Color("fff1aa")))
-		card.tooltip_text = ("Locked. " if not save.unlocked.has(key) else "") + "Starts with " + Data.UPGRADES[info[1]][0]
-		roster.add_child(card)
-	if not upgrades_open:
-		box = VBoxContainer.new()
-		box.add_theme_constant_override("separation", 10)
-		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		body.add_child(box)
-	var selected = Data.CHARACTERS[preview]
-	box.add_child(UI.label(selected[0] + "  /  " + Data.UPGRADES[selected[1]][0], 19))
-	if upgrades_open:
-		build_training_menu(box)
-		return
-	var flavor = UI.label(selected[3], 14)
-	flavor.custom_minimum_size.y = 38
-	flavor.add_theme_color_override("font_color", UI.MUTED)
-	box.add_child(flavor)
-	var owned = save.unlocked.has(preview)
-	var ready = save.best >= Data.CHARACTER_MILESTONES[preview]
-	var start = UI.button("SURVIVE THE NIGHT" if owned else "UNLOCK %s / %d GOLD" % [selected[0], Data.CHARACTER_COSTS[preview]] if ready else "SURVIVE %d:%02d TO UNLOCK" % [Data.CHARACTER_MILESTONES[preview] / 60, Data.CHARACTER_MILESTONES[preview] % 60], _on_start_button_pressed if owned else unlock_character)
+	masthead.add_child(UI.portrait(preview, 40))
+	var title = UI.label({"home":"CHICKENPUNCH", "setup":"SURVIVE THE NIGHT", "shop":"COOP SHOP", "training":"COOP UPGRADES", "options":"OPTIONS"}[page], 30)
+	title.add_theme_color_override("font_color", UI.LEAF)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	masthead.add_child(title)
+	masthead.add_child(UI.stat_chip("gold", str(save.gold), "Permanent gold for unlocks and training"))
+	masthead.add_child(UI.stat_chip("clock", "%02d:%02d" % [save.best / 60, save.best % 60], "Best survival time"))
+	masthead.add_child(UI.stat_chip("trophy", str(save.wins), "Victories"))
+	match page:
+		"home": build_home(box)
+		"setup": build_setup(box)
+		"shop": build_shop(box)
+		"training":
+			var select = OptionButton.new()
+			for key in Data.CHARACTERS: select.add_item(Data.CHARACTERS[key][0])
+			select.select(Data.CHARACTERS.keys().find(preview))
+			select.item_selected.connect(func(i): select_character(Data.CHARACTERS.keys()[i]))
+			box.add_child(select)
+			build_training_menu(box)
+		"options":
+			var tabs = TabContainer.new()
+			tabs.name = "OptionsTabs"
+			tabs.custom_minimum_size = Vector2(740, 340)
+			box.add_child(tabs)
+			UI.add_options_pages(tabs, save, apply_options_audio)
+			box.add_child(UI.button("BACK", close_options))
+
+func build_home(box: VBoxContainer):
+	var center = CenterContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(center)
+	var content = VBoxContainer.new()
+	content.custom_minimum_size.x = 350
+	content.add_theme_constant_override("separation", 12)
+	center.add_child(content)
+	content.add_child(UI.portrait("nugget", 96))
+	var start = UI.button("SURVIVE THE NIGHT", show_setup)
 	start.name = "StartRun"
-	start.disabled = not owned and (not ready or save.gold < Data.CHARACTER_COSTS[preview])
+	start.custom_minimum_size.y = 52
 	UI.paint_button(start, UI.LEAF)
-	box.add_child(start)
-	var mode = OptionButton.new()
-	mode.add_item("Relaxed")
-	mode.add_item("Standard")
-	mode.add_item("Ferocious")
-	mode.select(difficulty_index)
-	mode.item_selected.connect(func(index): difficulty_index = index)
-	box.add_child(mode)
-	var training_button = UI.button("COOP UPGRADES", show_training)
-	training_button.name = "OpenUpgrades"
-	box.add_child(training_button)
-	var actions = HBoxContainer.new()
-	box.add_child(actions)
+	content.add_child(start)
+	var shop = UI.button("COOP SHOP", show_shop)
+	shop.name = "OpenShop"
+	content.add_child(shop)
+	var training = UI.button("COOP UPGRADES", show_training)
+	training.name = "OpenUpgrades"
+	content.add_child(training)
 	var options = UI.button("OPTIONS", _on_option_button_pressed)
 	options.name = "OpenOptions"
-	options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(options)
+	content.add_child(options)
 	var quit_button = UI.button("QUIT GAME", _on_exist_button_pressed)
 	quit_button.name = "QuitGame"
 	quit_button.visible = not OS.has_feature("web")
-	quit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UI.paint_button(quit_button, Color("a4513e"))
-	actions.add_child(quit_button)
+	content.add_child(quit_button)
 	start.grab_focus()
 
+func build_setup(box: VBoxContainer):
+	var columns = HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 18)
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(columns)
+	var roster = VBoxContainer.new()
+	roster.custom_minimum_size.x = 238
+	columns.add_child(roster)
+	roster.add_child(UI.label("DEFENDER", 18))
+	for key in Data.CHARACTERS:
+		var owned = save.unlocked.has(key)
+		var card = UI.button(Data.CHARACTERS[key][0], select_character.bind(key))
+		card.name = "Character_" + key
+		card.icon = Data.character_icon(key)
+		card.expand_icon = true
+		card.add_theme_constant_override("icon_max_width", 32)
+		card.custom_minimum_size.y = 48
+		card.toggle_mode = true
+		card.button_pressed = preview == key
+		card.tooltip_text = "Starts with " + Data.UPGRADES[Data.CHARACTERS[key][1]][0] if owned else "Unlock in Coop Shop > Characters"
+		if not owned:
+			for state in ["normal", "hover", "pressed", "focus"]: card.add_theme_color_override("icon_" + state + "_color", Color.BLACK)
+		roster.add_child(card)
+	roster.add_child(UI.label(Data.CHARACTERS[preview][3], 14))
+	var settings = VBoxContainer.new()
+	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings.add_theme_constant_override("separation", 8)
+	columns.add_child(settings)
+	settings.add_child(UI.label("LEVEL", 18))
+	var maps = HBoxContainer.new()
+	settings.add_child(maps)
+	for key in Data.LEVELS:
+		var entry = Data.LEVELS[key]
+		var card = UI.button(entry.name.replace(" ", "\n"), select_level.bind(key))
+		card.name = "Level_" + key
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.custom_minimum_size.y = 68
+		card.disabled = not Data.level_available(save, key)
+		card.toggle_mode = true
+		card.button_pressed = level_id == key
+		card.tooltip_text = entry.description if not card.disabled else "Survive %d minutes to unlock" % (entry.best / 60)
+		maps.add_child(card)
+	settings.add_child(UI.label(Data.LEVELS[level_id].description, 15))
+	settings.add_child(UI.label("DIFFICULTY", 18))
+	var modes = HBoxContainer.new()
+	settings.add_child(modes)
+	for i in range(Data.DIFFICULTIES.size()):
+		var card = UI.button(Data.DIFFICULTIES[i].name, select_difficulty.bind(i))
+		card.name = "Difficulty_" + str(i)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.disabled = not Data.difficulty_available(save, level_id, i)
+		card.toggle_mode = true
+		card.button_pressed = difficulty_index == i
+		card.tooltip_text = "Clear the previous difficulty on this level" if card.disabled else Data.DIFFICULTIES[i].description
+		modes.add_child(card)
+	settings.add_child(UI.label(Data.DIFFICULTIES[difficulty_index].description, 15))
+	settings.add_child(UI.label("Starting weapon: " + Data.UPGRADES[Data.CHARACTERS[preview][1]][0], 18))
+	settings.add_child(UI.label("Weapon slots %d / Tome slots %d" % [Data.training(save,preview).weapon_slots, Data.training(save,preview).tome_slots], 14))
+	var actions = HBoxContainer.new()
+	box.add_child(actions)
+	actions.add_child(UI.button("BACK", show_roster))
+	var start = UI.button("BEGIN RUN" if save.unlocked.has(preview) else "UNLOCK IN COOP SHOP", _on_start_button_pressed)
+	start.name = "BeginRun"
+	start.disabled = not save.unlocked.has(preview)
+	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.paint_button(start, UI.LEAF)
+	actions.add_child(start)
+
+func build_shop(box: VBoxContainer):
+	box.add_child(UI.label("Permanent access · purchased gear can appear in future runs", 15))
+	var tabs = TabBar.new()
+	for title in ["Weapons", "Tomes", "Items", "Characters"]: tabs.add_tab(title)
+	tabs.current_tab = shop_tab
+	tabs.tab_changed.connect(func(i): shop_tab = i; build_menu())
+	box.add_child(tabs)
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size.y = 345
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var grid = GridContainer.new()
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 10)
+	scroll.add_child(grid)
+	var entries = Data.CHARACTERS.keys() if shop_tab == 3 else Data.ITEMS.keys() if shop_tab == 2 else Data.UPGRADES.keys().filter(func(k): return (k in Data.WEAPONS) == (shop_tab == 0))
+	for key in entries:
+		var character = shop_tab == 3
+		var item = shop_tab == 2
+		var info = Data.CHARACTERS[key] if character else Data.ITEMS[key] if item else Data.UPGRADES[key]
+		var owned = save.unlocked.has(key) if character else Data.equipment_owned(save,key,item)
+		var requirement = Data.CHARACTER_MILESTONES[key] if character else Data.unlock_requirement(key,item)
+		var cost = Data.CHARACTER_COSTS[key] if character else Data.unlock_cost(key,item)
+		var panel = PanelContainer.new()
+		panel.custom_minimum_size.x = 376
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel.add_theme_stylebox_override("panel", UI.paper_style("Popup01a", 10))
+		grid.add_child(panel)
+		var content = VBoxContainer.new()
+		panel.add_child(content)
+		var heading = HBoxContainer.new()
+		content.add_child(heading)
+		var icon = UI.portrait(key,32) if character else UI.icon(key,item,32)
+		if character and not owned: icon.modulate = Color.BLACK
+		heading.add_child(icon)
+		var equipment_title = UI.label(info[0],18)
+		equipment_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		heading.add_child(equipment_title)
+		var detail = UI.label("Starts with " + Data.UPGRADES[info[1]][0] if character else info[1],14)
+		detail.custom_minimum_size = Vector2(340, 44)
+		content.add_child(detail)
+		var text = "OWNED" if owned else "SURVIVE %d:%02d  (%d:%02d)" % [requirement / 60, requirement % 60, mini(save.best,requirement) / 60, mini(save.best,requirement) % 60] if save.best < requirement else "UNLOCK · %d GOLD" % cost
+		var buy = UI.button(text, buy_shop.bind(key, character, item))
+		buy.name = "Unlock_" + key
+		buy.disabled = owned or save.best < requirement or save.gold < cost
+		buy.tooltip_text = "Unlocks access, not an immediate run upgrade."
+		content.add_child(buy)
+	box.add_child(UI.button("BACK", show_roster))
+
+func buy_shop(key: String, character: bool, item: bool):
+	if character:
+		preview = key
+		unlock_character()
+	else:
+		Data.purchase_access(save,key,item)
+		build_menu()
+
+func select_level(key: String):
+	if not Data.level_available(save,key): return
+	level_id = key
+	if not Data.difficulty_available(save,key,difficulty_index): difficulty_index = 0
+	build_menu()
+
+func select_difficulty(index: int):
+	if not Data.difficulty_available(save,level_id,index): return
+	difficulty_index = index
+	build_menu()
+
+func show_setup():
+	page = "setup"
+	build_menu()
+func show_shop():
+	page = "shop"
+	build_menu()
 func show_training():
+	page = "training"
 	upgrades_open = true
 	build_menu()
-
 func show_roster():
+	page = "home"
 	upgrades_open = false
+	options_open = false
 	build_menu()
-	var opener = menu.find_child("OpenUpgrades", true, false)
-	if opener: opener.grab_focus()
-
+func _on_option_button_pressed():
+	page = "options"
+	options_open = true
+	build_menu()
+func close_options(): show_roster()
 func _unhandled_key_input(event: InputEvent):
 	if event.is_action_pressed("ui_cancel"):
-		if options_open: close_options()
-		elif upgrades_open: show_roster()
-		else: _on_option_button_pressed()
+		if page == "home": _on_option_button_pressed()
+		else: show_roster()
 		get_viewport().set_input_as_handled()
+
+func _on_start_button_pressed():
+	if page != "setup":
+		show_setup()
+		return
+	if not save.unlocked.has(preview) or not Data.level_available(save,level_id) or not Data.difficulty_available(save,level_id,difficulty_index): return
+	save.character = preview
+	Data.write_save(save)
+	get_tree().set_meta("difficulty", Data.DIFFICULTIES[difficulty_index].power)
+	get_tree().set_meta("difficulty_tier", difficulty_index)
+	get_tree().set_meta("level_id", level_id)
+	get_tree().change_scene_to_file("res://scenes/world/world.tscn")
 
 func build_training_menu(box: VBoxContainer):
 	var owned = save.unlocked.has(preview)
 	var summary = HBoxContainer.new()
 	summary.add_theme_constant_override("separation", 24)
 	box.add_child(summary)
-	var hint = UI.label("Upgrades apply only to " + Data.CHARACTERS[preview][0] + "." if owned else "Unlock this defender from the character menu first.", 14)
+	var hint = UI.label("Upgrades apply only to " + Data.CHARACTERS[preview][0] + "." if owned else "Unlock this defender in the Characters shop tab.", 14)
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint.add_theme_color_override("font_color", UI.MUTED)
 	summary.add_child(hint)
@@ -182,7 +292,7 @@ func build_training_menu(box: VBoxContainer):
 		var cost = 80 * (rank - 1) if slots else 40 + rank * 30
 		var title = {"power": "Fighting Spirit", "heart": "A Hardy Hen", "weapon_slots": "Weapon Slots", "tome_slots": "Tome Slots"}[key]
 		var card = PanelContainer.new()
-		card.custom_minimum_size.x = 360
+		card.custom_minimum_size.x = 340
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", UI.paper_style("Popup01a", 12))
 		grid.add_child(card)
@@ -199,7 +309,7 @@ func build_training_menu(box: VBoxContainer):
 		buy.disabled = not owned or rank >= maximum or save.gold < cost
 		UI.paint_button(buy, UI.LEAF)
 		content.add_child(buy)
-	var back = UI.button("BACK TO CHARACTERS", show_roster)
+	var back = UI.button("BACK", show_roster)
 	back.name = "BackToCharacters"
 	box.add_child(back)
 	back.grab_focus()
@@ -237,23 +347,6 @@ func purchase(key: String):
 	build_menu()
 	var buy = menu.find_child("Buy_" + key, true, false)
 	if buy and not buy.disabled: buy.grab_focus()
-
-func _on_start_button_pressed():
-	if not save.unlocked.has(preview): return
-	save.character = preview
-	Data.write_save(save)
-	get_tree().set_meta("difficulty", [0.75, 1.0, 1.3][difficulty_index])
-	get_tree().change_scene_to_file("res://scenes/world/world.tscn")
-
-func _on_option_button_pressed():
-	options_open = true
-	build_menu()
-
-func close_options():
-	options_open = false
-	build_menu()
-	var opener = menu.find_child("OpenOptions", true, false)
-	if opener: opener.grab_focus()
 
 func apply_options_audio():
 	AudioServer.set_bus_mute(0, save.muted)

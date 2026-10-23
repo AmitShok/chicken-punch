@@ -25,11 +25,11 @@ func test():
 		run.pending_levels = 1
 		run.choose_upgrade("projectile_count")
 		check(run.projectile_bonus() == rarity+1, "Rarity %d grants exactly +%d shots" % [rarity,rarity+1])
-	run.ranks.projectile_count = 4
+	run.ranks.projectile_count = 9
 	run.offers = ["projectile_count"]
 	run.offer_rarities = {"projectile_count":2}
 	run.choose_upgrade("projectile_count")
-	check(run.projectile_bonus() == 5, "Count bonus caps at five near maximum rank")
+	check(run.projectile_bonus() == 10, "Count bonus caps at ten near maximum rank")
 	run.ranks = {"egg":5,"shuriken":5,"fire":5,"orbit":5,"thunder":5,"frost":5,"sickle":5,"shell":5,"projectile_count":3,"projectile_size":5,"projectile_speed":5,"might":5,"haste":5}
 	for i in range(12):
 		var e = run.spawn_enemy("tank")

@@ -359,7 +359,7 @@ func slot(key: String, is_item: bool) -> PanelContainer:
 	frame.tooltip_text = info[0] + "\n" + info[1]
 	if not is_item and Data.EVOLUTIONS.has(key):
 		var recipe = Data.EVOLUTIONS[key]
-		frame.tooltip_text += "\nEvolution: rank 5 + " + Data.UPGRADES[recipe[0]][0] + " + chest\n" + Data.EVOLUTION_EFFECTS[key]
+		frame.tooltip_text += "\nEvolution: rank 10 + " + Data.UPGRADES[recipe[0]][0] + " + chest\n" + Data.EVOLUTION_EFFECTS[key]
 	return frame
 
 func _process(delta):
@@ -408,7 +408,7 @@ func update_objectives():
 	var nearest = null
 	var distance = INF
 	for pickup in get_tree().get_nodes_in_group("run_pickups"):
-		if not is_instance_valid(pickup) or pickup.is_queued_for_deletion() or pickup.opened: continue
+		if not is_instance_valid(pickup) or pickup.is_queued_for_deletion() or pickup.opened or pickup.kind not in ["chest", "magnet"]: continue
 		var d = run.player.global_position.distance_squared_to(pickup.global_position)
 		if d < distance:
 			nearest = pickup
@@ -514,7 +514,7 @@ func show_choices():
 		title.custom_minimum_size.y = 28
 		card.add_child(title)
 		if not is_item and Data.EVOLUTIONS.has(key):
-			card_frame.tooltip_text = "EVOLUTION: " + Data.UPGRADES[Data.EVOLUTIONS[key][0]][0] + " tome + weapon rank 5 + chest\n" + Data.EVOLUTION_EFFECTS[key]
+			card_frame.tooltip_text = "EVOLUTION: " + Data.UPGRADES[Data.EVOLUTIONS[key][0]][0] + " tome + weapon rank 10 + chest\n" + Data.EVOLUTION_EFFECTS[key]
 		var rank = run.items.get(key, 0) if is_item else run.ranks.get(key, 0)
 		var category = "ITEM" if is_item else "WEAPON" if key in Data.WEAPONS else "TOME"
 		var sub = "%s  /  STACK %d > %d" % [category, rank, rank + 1] if is_item else "%s  /  LV %d > %d" % [category, rank, run.offered_rank(key)]
@@ -550,7 +550,7 @@ func show_choices():
 		skip_button.disabled = run.skips <= 0
 		skip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		actions.add_child(skip_button)
-	box.add_child(label("1 / 2 / 3 to select.  " + ("Treasure items do not use weapon or tome slots." if is_item else "Rare = +2 ranks. Epic = +3 ranks. Capped at rank 5. Banishes left: %d" % run.banishes), 14))
+	box.add_child(label("1 / 2 / 3 to select.  " + ("Treasure items do not use weapon or tome slots." if is_item else "Rare = +2 ranks. Epic = +3 ranks. Capped at rank 10. Banishes left: %d" % run.banishes), 14))
 	if first:
 		first.grab_focus()
 
@@ -652,7 +652,7 @@ func show_evolution(key: String):
 	var effect_text = label(Data.EVOLUTION_EFFECTS[key], 22)
 	effect_text.add_theme_color_override("font_color", LEAF)
 	explanation.add_child(effect_text)
-	box.add_child(label("Recipe completed: " + Data.UPGRADES[key][0] + " rank 5 + " + Data.UPGRADES[recipe[0]][0] + " rank 1+ + a chest.", 17))
+	box.add_child(label("Recipe completed: " + Data.UPGRADES[key][0] + " rank 10 + " + Data.UPGRADES[recipe[0]][0] + " rank 1+ + a chest.", 17))
 	box.add_child(label("This chest granted the evolution instead of a treasure item. Your weapon keeps its slot and all your damage bonuses.", 16))
 	var continue_button = button("UNLEASH " + recipe[1].to_upper(), func():
 		close_modal()
@@ -755,7 +755,7 @@ func show_chest_reward():
 	details.add_child(label("Coin salvage" if salvage else Data.ITEMS[key][0],28))
 	details.add_child(label("All items are maxed. Receive %d coins." % maxi(15,run.last_chest_paid) if salvage else Data.ITEMS[key][1],18))
 	if not salvage:
-		details.add_child(label("Stack %d > %d / 3" % [run.items.get(key,0),run.items.get(key,0)+1],17))
+		details.add_child(label("Level %d > %d / 10" % [run.items.get(key,0),run.items.get(key,0)+1],17))
 	var take = button("TAKE & CONTINUE",run.choose_upgrade.bind(key))
 	paint_button(take,LEAF)
 	box.add_child(take)

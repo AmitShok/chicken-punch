@@ -1,6 +1,8 @@
 extends RefCounted
 
 static var save_path = "user://coop_save.cfg"
+const MAX_RANK = 10
+const MAX_ITEM_LEVEL = 10
 const PACK = "res://assets/Ninja Adventure - Asset Pack/"
 # Name, starting weapon, sprite sheet (empty = original chicken), flavor.
 const CHARACTERS = {
@@ -28,34 +30,34 @@ static func character_icon(key: String) -> Texture2D:
 	return atlas
 
 const UPGRADES = {
-	"projectile_speed": ["Tailwind", "+20% projectile travel speed and orbit rotation speed per rank.", PACK + "Items/Resource/feather.png", 5],
-	"projectile_count": ["Brood Burst", "Extra shots, blades and chain targets; denser fire trails. +1 / +2 / +3 by rarity.", PACK + "Items/Food/Seed3.png", 5],
-	"projectile_size": ["Giant Hatch", "+20% weapon size and hit radius per rank. Also enlarges explosions, fire and lightning reach.", PACK + "Items/Resource/BarMithril.png", 5],
-	"egg": ["Egg Barrage", "Another egg per volley; +4 damage.", "res://assets/sprites/egg_sprite.png", 5],
-	"shuriken": ["Razor Feathers", "Piercing fans of shuriken. More blades per rank.", PACK + "FX/Projectile/Shuriken.png", 5],
-	"fire": ["Hot Foot", "Leave burning ground behind you. More damage and duration.", PACK + "Items/Scroll/ScrollFire.png", 5],
-	"orbit": ["Coop Guard", "Orbiting blades protect your personal space.", PACK + "Items/Weapons/Sai/Sprite.png", 5],
-	"might": ["Fighting Spirit", "DAMAGE: +20% damage to every weapon per rank.", PACK + "Items/Weapons/Sword/Sprite.png", 5],
-	"haste": ["Quick Hatch", "RELOAD SPEED: 10% shorter attack cooldown per rank. Evolves Egg Barrage.", PACK + "Items/Object/Hourglass.png", 5],
-	"area": ["Wide Wings", "+18% area. Fire rank 5 + this tome + chest evolves Fire.", PACK + "Items/Object/Book.png", 5],
-	"speed": ["Fleet Feet", "+8% movement speed. Shuriken rank 5 + this tome + chest evolves Shuriken.", PACK + "Items/Food/Seed1.png", 5],
-	"armor": ["Iron Shell", "Reduce incoming damage by 1. Guard rank 5 + this tome + chest evolves Guard.", PACK + "Items/Potion/MilkPot.png", 5],
-	"magnet": ["Forager", "+30 pickup radius and +10% XP.", PACK + "Items/Object/Bag.png", 5],
-	"vitality": ["Big Heart", "+20 maximum health and heal 20.", PACK + "Items/Potion/Heart.png", 5],
-	"thunder": ["Storm Call", "Strikes one enemy at rank 1. Each rank adds damage; chaining starts at rank 2 with one extra target per rank.", PACK + "Items/Scroll/ScrollThunder.png", 5],
-	"frost": ["Frost Quills", "Piercing ice shards slow enemies by 45% for 2 seconds.", PACK + "Items/Scroll/ScrollIce.png", 5],
-	"sickle": ["Harvest Moon", "A spinning sickle returns to you, hitting again on its way back.", PACK + "Items/Tool/Sickle.png", 5],
-	"shell": ["Shell Shock", "Launch explosive shells at the nearest enemy.", PACK + "Items/Resource/Rock.png", 5],
-	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal double damage.", PACK + "Items/Resource/GemYellow.png", 5],
-	"duration": ["Long Summer", "Extends the duration of effects such as lingering fire and icy slows by 20% per rank.", PACK + "Items/Scroll/ScrollPlant.png", 5],
-	"regen": ["Second Wind", "Recover 0.4 health per second.", PACK + "Items/Potion/LifePot.png", 5]
+	"projectile_speed": ["Tailwind", "+20% projectile travel speed and orbit rotation speed per rank.", PACK + "Items/Resource/feather.png", MAX_RANK],
+	"projectile_count": ["Brood Burst", "Extra shots, blades and chain targets; denser fire trails. +1 / +2 / +3 by rarity.", PACK + "Items/Food/Seed3.png", MAX_RANK],
+	"projectile_size": ["Giant Hatch", "+20% weapon size and hit radius per rank. Also enlarges explosions, fire and lightning reach.", PACK + "Items/Resource/BarMithril.png", MAX_RANK],
+	"egg": ["Egg Barrage", "Another egg per volley; +4 damage.", "res://assets/sprites/egg_sprite.png", MAX_RANK],
+	"shuriken": ["Razor Feathers", "Piercing fans of shuriken. More blades per rank.", PACK + "FX/Projectile/Shuriken.png", MAX_RANK],
+	"fire": ["Hot Foot", "Leave burning ground behind you. More damage and duration.", PACK + "Items/Scroll/ScrollFire.png", MAX_RANK],
+	"orbit": ["Coop Guard", "Orbiting blades protect your personal space.", PACK + "Items/Weapons/Sai/Sprite.png", MAX_RANK],
+	"might": ["Fighting Spirit", "DAMAGE: +20% damage to every weapon per rank.", PACK + "Items/Weapons/Sword/Sprite.png", MAX_RANK],
+	"haste": ["Quick Hatch", "RELOAD SPEED: 10% shorter attack cooldown per rank. Evolves Egg Barrage.", PACK + "Items/Object/Hourglass.png", MAX_RANK],
+	"area": ["Wide Wings", "+18% area. Fire rank 10 + this tome + chest evolves Fire.", PACK + "Items/Object/Book.png", MAX_RANK],
+	"speed": ["Fleet Feet", "+8% movement speed. Shuriken rank 10 + this tome + chest evolves Shuriken.", PACK + "Items/Food/Seed1.png", MAX_RANK],
+	"armor": ["Iron Shell", "Reduce incoming damage by 1. Guard rank 10 + this tome + chest evolves Guard.", PACK + "Items/Potion/MilkPot.png", MAX_RANK],
+	"magnet": ["Forager", "+30 pickup radius and +10% XP.", PACK + "Items/Object/Bag.png", MAX_RANK],
+	"vitality": ["Big Heart", "+20 maximum health and heal 20.", PACK + "Items/Potion/Heart.png", MAX_RANK],
+	"thunder": ["Storm Call", "Strikes one enemy at rank 1. Each rank adds damage; chaining starts at rank 2 with one extra target per rank.", PACK + "Items/Scroll/ScrollThunder.png", MAX_RANK],
+	"frost": ["Frost Quills", "Piercing ice shards slow enemies by 45% for 2 seconds.", PACK + "Items/Scroll/ScrollIce.png", MAX_RANK],
+	"sickle": ["Harvest Moon", "A spinning sickle returns to you, hitting again on its way back.", PACK + "Items/Tool/Sickle.png", MAX_RANK],
+	"shell": ["Shell Shock", "Launch explosive shells at the nearest enemy.", PACK + "Items/Resource/Rock.png", MAX_RANK],
+	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal double damage.", PACK + "Items/Resource/GemYellow.png", MAX_RANK],
+	"duration": ["Long Summer", "Extends the duration of effects such as lingering fire and icy slows by 20% per rank.", PACK + "Items/Scroll/ScrollPlant.png", MAX_RANK],
+	"regen": ["Second Wind", "Recover 0.4 health per second.", PACK + "Items/Potion/LifePot.png", MAX_RANK]
 }
 const WEAPONS = ["egg", "shuriken", "fire", "orbit", "thunder", "frost", "sickle", "shell"]
 const WEAPON_SLOTS = 4
 const TOME_SLOTS = 4
 const RARITIES = ["COMMON", "RARE", "EPIC"]
 const RARITY_COLORS = [Color("92713a"), Color("39754e"), Color("8b4a9b")]
-# Treasure items are distinct from level-up tomes. Each stacks up to three times.
+# Treasure items are distinct from level-up tomes. Each stacks up to ten times.
 const ITEMS = {
 	"key": ["Coop Key", "Chance to open paid chests for free without raising prices: stacks / (stacks + 10).", PACK + "Items/Treasure/GoldKey.png", 0],
 	"clover": ["Lucky Seed", "+6% rare-upgrade chance per stack; improves rare chest loot odds.", PACK + "Items/Food/Seed3.png", 0],
@@ -100,6 +102,52 @@ const EVOLUTIONS = {"egg": ["haste", "Golden Omelette"], "shuriken": ["speed", "
 const CHARACTER_COSTS = {"nugget": 0, "pepper": 40, "whisker": 60, "truffle": 90, "clover": 120}
 const CHARACTER_MILESTONES = {"nugget": 0, "pepper": 60, "whisker": 120, "truffle": 180, "clover": 300}
 
+
+# Permanent access is separate from the levels earned inside each run.
+const STARTER_EQUIPMENT = ["egg", "shuriken", "might", "haste", "vitality", "speed"]
+const STARTER_ITEMS = ["honey", "lunch", "bead"]
+const LEVELS = {
+	"meadow": {"name": "Coop Meadow", "description": "The original farm. Hedges, open grass and room to dodge.", "best": 0, "tint": Color("e6ebf0"), "pressure": 1.0},
+	"orchard": {"name": "Amber Orchard", "description": "Tree-lined lanes. More bats, closer cover and faster waves.", "best": 180, "tint": Color("ffe2b5"), "pressure": 1.12},
+	"pasture": {"name": "Moonlit Pasture", "description": "Rocky rings under a blue moon. Casters arrive earlier.", "best": 360, "tint": Color("b8d5ed"), "pressure": 1.24}
+}
+const DIFFICULTIES = [
+	{"name": "I · Standard", "power": 1.0, "reward": 1.0, "description": "Normal enemy strength. 1x gold."},
+	{"name": "II · Ferocious", "power": 1.35, "reward": 1.3, "description": "35% more enemy HP, stronger hits. 1.3x gold."},
+	{"name": "III · Nightmare", "power": 1.8, "reward": 1.6, "description": "80% more enemy HP, stronger hits. 1.6x gold."}
+]
+
+static func equipment_owned(data: Dictionary, key: String, item: bool = false) -> bool:
+	if item: return key in STARTER_ITEMS or key in data.get("item_unlocks", [])
+	if key in STARTER_EQUIPMENT or key in data.get("equipment_unlocks", []): return true
+	for character in data.get("unlocked", ["nugget"]):
+		if CHARACTERS.has(character) and CHARACTERS[character][1] == key: return true
+	return false
+
+static func unlock_requirement(key: String, item: bool = false) -> int:
+	if item: return [60, 120, 240][ITEMS[key][3]]
+	return 120 if key in WEAPONS else 60
+
+static func unlock_cost(key: String, item: bool = false) -> int:
+	if item: return [25, 40, 60][ITEMS[key][3]]
+	return 60 if key in WEAPONS else 35
+
+static func purchase_access(data: Dictionary, key: String, item: bool = false) -> bool:
+	if not (ITEMS if item else UPGRADES).has(key): return false
+	if equipment_owned(data, key, item) or data.best < unlock_requirement(key, item) or data.gold < unlock_cost(key, item): return false
+	data.gold -= unlock_cost(key, item)
+	var field = "item_unlocks" if item else "equipment_unlocks"
+	if not data.has(field): data[field] = []
+	data[field].append(key)
+	write_save(data)
+	return true
+
+static func level_available(data: Dictionary, key: String) -> bool:
+	return LEVELS.has(key) and data.best >= LEVELS[key].best
+
+static func difficulty_available(data: Dictionary, level: String, tier: int) -> bool:
+	return tier >= 0 and tier < DIFFICULTIES.size() and (tier == 0 or int(data.get("level_clears", {}).get(level, 0)) >= tier)
+
 static func training(data: Dictionary, character: String = "") -> Dictionary:
 	return data.training[character if character != "" else data.character]
 
@@ -130,6 +178,16 @@ static func read_save() -> Dictionary:
 		var track = tracks.get(key, {}) if tracks is Dictionary else {}
 		if not track is Dictionary: track = {}
 		data.training[key] = {"power": clampi(int(track.get("power", data.power)), 0, 5), "heart": clampi(int(track.get("heart", data.heart)), 0, 5), "weapon_slots": clampi(int(track.get("weapon_slots", 2)), 2, 4), "tome_slots": clampi(int(track.get("tome_slots", 2)), 2, 4)}
+	for entry in [["equipment_unlocks", UPGRADES], ["item_unlocks", ITEMS]]:
+		data[entry[0]] = []
+		var owned = config.get_value("coop", entry[0], [])
+		if owned is Array:
+			for key in owned:
+				if entry[1].has(key) and not data[entry[0]].has(key): data[entry[0]].append(key)
+	var clears = config.get_value("coop", "level_clears", {"meadow": 1 if data.wins > 0 else 0})
+	data.level_clears = {}
+	for level in LEVELS:
+		data.level_clears[level] = clampi(int(clears.get(level, 0)), 0, 3) if clears is Dictionary else 0
 	return data
 
 static func write_save(data: Dictionary) -> void:

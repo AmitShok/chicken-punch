@@ -66,13 +66,13 @@ func test():
 	check(run.try_open_chest(key_chest) and run.coins==100 and run.paid_chests==1, "Key proc grants free opening without price escalation")
 	run.choose_upgrade(run.offers[0])
 	run.items.clear()
-	run.ranks={"egg":5,"haste":1}
+	run.ranks={"egg":10,"haste":1}
 	run.coins=100
 	check(run.try_open_chest(run.drop("chest",run.player.position,1)) and run.evolved.has("egg") and run.ui.mode=="evolution", "Paid chests preserve evolution recipes")
 	check(run.coins==55 and run.paid_chests==2, "Evolution chest still pays displayed price")
 	run.ui.close_modal()
 	paused=false
-	for item in Data.ITEMS: run.items[item]=3
+	for item in Data.ITEMS: run.items[item]=10
 	run.try_open_chest(run.drop("chest",run.player.position,0))
 	check(run.offers==["gold"], "Full collection safely falls back to coins")
 	run.choose_upgrade("gold")

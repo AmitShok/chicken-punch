@@ -19,7 +19,7 @@ func test():
 		run.set_physics_process(false)
 		run.player.set_physics_process(false)
 		var rule = Data.ASCENSIONS[key]
-		run.ranks = {rule[1]:5,rule[2]:5,rule[3]:5,rule[4]:5}
+		run.ranks = {rule[1]:10,rule[2]:10,rule[3]:10,rule[4]:10}
 		run.evolved = {rule[1]:true,rule[2]:true}
 		run.items = {rule[5]:3}
 		run.guardians_defeated = 2
@@ -32,9 +32,9 @@ func test():
 			check(not run.ascension_ready(key), key+" requires evolution "+weapon)
 			run.evolved[weapon] = true
 		for tome in [rule[3],rule[4]]:
-			run.ranks[tome] = 4
+			run.ranks[tome] = 9
 			check(not run.ascension_ready(key), key+" requires maxed tome "+tome)
-			run.ranks[tome] = 5
+			run.ranks[tome] = 10
 		run.items[rule[5]] = 2
 		check(not run.ascension_ready(key), key+" requires three item stacks")
 		run.items[rule[5]] = 3
@@ -74,14 +74,14 @@ func test():
 			if child.get_script() == preload("res://scripts/survival/projectile.gd"):
 				projectiles[child.source] = projectiles.get(child.source,0)+1
 		if key == "whiteout":
-			check(projectiles.get("frost",0) == 11, "Absolute Zero launches eleven ice shards")
+			check(projectiles.get("frost",0) == 14, "Absolute Zero launches fourteen ice shards")
 			check(is_equal_approx(run.arsenal.clocks.thunder,1.0), "Absolute Zero halves lightning cooldown")
 		elif key == "henpocalypse":
-			check(projectiles.get("egg",0) == 16, "Henpocalypse launches sixteen eggs")
-			check(is_equal_approx(run.cooldowns.egg,0.85*pow(0.9,5)*0.5), "Henpocalypse stacks with Quick Hatch")
+			check(projectiles.get("egg",0) == 21, "Henpocalypse launches twenty-one eggs")
+			check(is_equal_approx(run.cooldowns.egg,0.85*pow(0.9,10)*0.5), "Henpocalypse stacks with Quick Hatch")
 		else:
 			check(projectiles.get("sickle",0) == 4, "Last Harvest launches four sickles")
-			check(run.orbit_sprites.size() == 13, "Last Harvest creates thirteen orbiting blades")
+			check(run.orbit_sprites.size() == 16, "Last Harvest creates sixteen orbiting blades")
 		run.player.hp = 100000
 		for tick in range(180):
 			for weapon in run.cooldowns: run.cooldowns[weapon] -= 1.0/60
@@ -98,8 +98,8 @@ func test():
 	var run = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(run)
 	run.set_physics_process(false)
-	for key in Data.UPGRADES: run.ranks[key] = 5
-	for key in Data.ITEMS: run.items[key] = 3
+	for key in Data.UPGRADES: run.ranks[key] = 10
+	for key in Data.ITEMS: run.items[key] = 10
 	for key in Data.UPGRADES:
 		check(Inspection.describe(run,key,false).contains("CURRENT EFFECT"), "inspect "+key)
 	for key in Data.ITEMS:

@@ -52,7 +52,7 @@ func test():
 	check(scene.offers.any(func(key): return key in Data.WEAPONS and key != "egg"), "Opening draft includes a new weapon")
 	scene.ui.close_modal()
 	paused = false
-	scene.ranks = {"egg": 4, "vitality": 1}
+	scene.ranks = {"egg": 9, "vitality": 1}
 	scene.offers = ["vitality"]
 	scene.offer_rarities = {"vitality": 2}
 	var old_health = scene.player.max_hp
@@ -61,9 +61,9 @@ func test():
 	scene.offers = ["egg"]
 	scene.offer_rarities = {"egg": 2}
 	scene.choose_upgrade("egg")
-	check(scene.ranks.egg == 5, "Rarity cannot exceed rank five")
+	check(scene.ranks.egg == 10, "Rarity cannot exceed rank ten")
 	scene.choose_upgrade("egg")
-	check(scene.ranks.egg == 5, "Consumed offers cannot be applied again")
+	check(scene.ranks.egg == 10, "Consumed offers cannot be applied again")
 	scene.pending_levels = 2
 	scene.pending_treasures = 1
 	scene.show_treasure()
@@ -72,7 +72,7 @@ func test():
 	check(scene.items[item] == 1 and scene.pending_levels == 2 and scene.pending_treasures == 0, "Treasure grants items without consuming queued level choices")
 	scene.items.clear()
 	for key in Data.ITEMS:
-		scene.items[key] = 3
+		scene.items[key] = 10
 	scene.show_treasure()
 	check(scene.offers == ["gold"], "Maxed item collection falls back to coins")
 	scene.choose_upgrade("gold")
@@ -81,7 +81,7 @@ func test():
 	scene.evolved.clear()
 	scene.pending_evolutions.clear()
 	for key in Data.EVOLUTIONS:
-		scene.ranks = {key: 5, Data.EVOLUTIONS[key][0]: 1}
+		scene.ranks = {key: 10, Data.EVOLUTIONS[key][0]: 1}
 		scene.collect({"kind": "chest"})
 		check(scene.evolved.has(key), "Evolution recipe activates: " + key)
 	check(scene.pending_evolutions.size() == 8, "All evolution reveals are queued without overwriting")

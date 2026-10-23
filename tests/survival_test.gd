@@ -44,7 +44,7 @@ func test():
 	scene.ui.close_modal()
 	paused = false
 	scene.pending_levels = 0
-	scene.ranks = {"egg": 5, "haste": 1, "fire": 5, "area": 1, "orbit": 5, "armor": 1, "shuriken": 5, "speed": 1}
+	scene.ranks = {"egg": 10, "haste": 1, "fire": 10, "area": 1, "orbit": 10, "armor": 1, "shuriken": 10, "speed": 1}
 	for i in range(4):
 		scene.collect({"kind": "chest"})
 	check(scene.evolved.size() == 4, "All four chest evolution recipes trigger")
@@ -63,7 +63,7 @@ func test():
 	scene.attack_weapons()
 	scene.update_orbits(0.1)
 	scene.update_hazards(0.1)
-	check(scene.orbit_sprites.size() == 5 and scene.hazards.size() > 0, "Evolved orbit and fire weapons activate")
+	check(scene.orbit_sprites.size() == 8 and scene.hazards.size() > 0, "Evolved orbit and fire weapons activate")
 	scene.boss_stage = 3
 	scene.elapsed = 600
 	var boss = scene.spawn_enemy("boss", true)

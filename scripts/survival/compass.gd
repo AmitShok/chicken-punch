@@ -1,6 +1,6 @@
 extends Control
 var bearing = 0.0
-var target_label = "No pickups"
+var target_label = "No treasure"
 var target_texture: Texture2D
 var active = false
 var distance = 0
@@ -39,6 +39,6 @@ func track(pickup: Node, origin: Vector2):
 		atlas.region = Rect2(0,0,sprite.texture.get_width()/sprite.hframes,sprite.texture.get_height())
 		target_texture = atlas
 	else:
-		target_label = "No pickups"
+		target_label = "No treasure"
 		target_texture = null
 	queue_redraw()

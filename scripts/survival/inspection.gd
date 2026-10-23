@@ -4,7 +4,7 @@ const Data = preload("res://scripts/survival/data.gd")
 static func describe(run: Node, key: String, item: bool) -> String:
 	var count = run.items.get(key, 0) if item else run.ranks.get(key, 0)
 	var info = Data.ITEMS[key] if item else Data.UPGRADES[key]
-	var text = ("ITEM  /  %d stacks of 3" if item else "WEAPON  /  Rank %d of 5" if key in Data.WEAPONS else "TOME  /  Rank %d of 5") % count
+	var text = ("ITEM  /  %d levels of 10" if item else "WEAPON  /  Rank %d of 10" if key in Data.WEAPONS else "TOME  /  Rank %d of 10") % count
 	text += "\n\n" + info[1] + "\n\nCURRENT EFFECT\n"
 	if item:
 		text += item_effect(run, key, count)
@@ -17,11 +17,11 @@ static func describe(run: Node, key: String, item: bool) -> String:
 		text += "\n\n" + ("EVOLVED: " if run.evolved.has(key) else "EVOLUTION: ") + recipe[1]
 		text += "\n" + Data.EVOLUTION_EFFECTS[key]
 		if not run.evolved.has(key):
-			text += "\nNeeds this weapon rank 5 + %s rank 1 + chest.\nProgress: weapon %d/5, tome %d/1." % [Data.UPGRADES[recipe[0]][0], count, mini(1,run.ranks.get(recipe[0],0))]
+			text += "\nNeeds this weapon rank 10 + %s rank 1 + chest.\nProgress: weapon %d/10, tome %d/1." % [Data.UPGRADES[recipe[0]][0], count, mini(1,run.ranks.get(recipe[0],0))]
 	else:
 		match key:
 			"projectile_speed": text += "+%d%% projectile travel and orbit rotation speed. Instant lightning and stationary fire do not travel." % (count*20)
-			"projectile_count": text += "+%d shots, sickles, orbit blades or lightning targets (Storm Call rank 2+). Hot Foot spacing is divided by (1 + bonus), creating a denser trail. Picks grant +1 / +2 / +3 by rarity, capped at +5 total." % count
+			"projectile_count": text += "+%d shots, sickles, orbit blades or lightning targets (Storm Call rank 2+). Hot Foot spacing is divided by (1 + bonus), creating a denser trail. Picks grant +1 / +2 / +3 by rarity, capped at +10 total." % count
 			"projectile_size": text += "+%d%% sprite scale and hit radius. Also affects fire, explosion radii and lightning reach. Multiplies with Wide Wings for area effects." % (count*20)
 			"might": text += "+%d%% damage to all weapons." % (count*20)
 			"haste": text += "Weapon cooldowns multiplied by %.3f (%d%% shorter)." % [pow(0.9,count),roundi((1-pow(0.9,count))*100)]
@@ -32,10 +32,10 @@ static func describe(run: Node, key: String, item: bool) -> String:
 			"vitality": text += "+%d maximum HP. Each rank heals 20 when taken." % (count*20)
 			"regen": text += "Regenerate %.1f HP per second." % (count*0.4)
 			"crit": text += "+%d percentage points critical chance. Total chance: %d%% (85%% cap)." % [count*8, roundi(run.critical_chance()*100)]
-			"duration": text += "+%d%% effect duration. Lingering fire stays active longer and icy slows wear off later. Applies to Hot Foot / Phoenix Trail fire patches and Frost Quills / Deep Winter slows. Rank 5 doubles their duration." % (count*20)
+			"duration": text += "+%d%% effect duration. Lingering fire stays active longer and icy slows wear off later. Applies to Hot Foot / Phoenix Trail fire patches and Frost Quills / Deep Winter slows. Rank 10 triples their duration." % (count*20)
 		for weapon in Data.EVOLUTIONS:
 			if Data.EVOLUTIONS[weapon][0] == key:
-				text += "\n\nEVOLUTION PARTNER\n" + Data.UPGRADES[weapon][0] + " rank 5 + this tome rank 1 + chest = " + Data.EVOLUTIONS[weapon][1]
+				text += "\n\nEVOLUTION PARTNER\n" + Data.UPGRADES[weapon][0] + " rank 10 + this tome rank 1 + chest = " + Data.EVOLUTIONS[weapon][1]
 	for id in Data.SYNERGIES:
 		var rule = Data.SYNERGIES[id]
 		if (item and rule[3] and rule[2] == key) or (not item and (rule[1] == key or (not rule[3] and rule[2] == key))):

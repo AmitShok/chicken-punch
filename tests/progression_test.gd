@@ -55,6 +55,7 @@ func test():
 	run.set_physics_process(false)
 	run.player.set_physics_process(false)
 	check(is_equal_approx(run.power(),1.05),"Run uses selected character damage rank")
+	run.save.equipment_unlocks.append("shell")
 	run.ranks={"egg":1,"fire":1,"might":1,"haste":1,"area":1}
 	check(not run.eligible_upgrades().has("speed") and run.eligible_upgrades().has("shell"),"Purchased tome and weapon capacities govern upgrade offers")
 	var mob=run.spawn_enemy("dog")

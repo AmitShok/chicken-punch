@@ -33,6 +33,9 @@ var coins = 0
 var gold_earned = 0
 var ended = false
 var difficulty = 1.0
+var level_id = "meadow"
+var difficulty_tier = 0
+var reward_multiplier = 1.0
 var pending_levels = 0
 var ranks: Dictionary = {"egg": 1}
 var evolved: Dictionary = {}
@@ -80,9 +83,14 @@ func _ready():
 	player.hp = player.max_hp
 	if get_tree().has_meta("difficulty"):
 		difficulty = get_tree().get_meta("difficulty")
+	level_id = str(get_tree().get_meta("level_id", "meadow"))
+	if not Data.LEVELS.has(level_id): level_id = "meadow"
+	difficulty_tier = clampi(int(get_tree().get_meta("difficulty_tier", 0)), 0, 2)
+	reward_multiplier = Data.DIFFICULTIES[difficulty_tier].reward
+	preload("res://scripts/survival/level_layout.gd").apply(self, level_id)
 	$MobTimer/MobTimer.stop()
 	$GUIlayer.hide()
-	$CanvasModulate.color = Color(0.9, 0.92, 0.94)
+	$CanvasModulate.color = Data.LEVELS[level_id].tint
 	$PointLight2D.hide()
 	var ground = get_node("Ground layer")
 	var used: Rect2i = ground.get_used_rect()
@@ -123,7 +131,7 @@ func _ready():
 	AudioServer.set_bus_mute(0, save.muted)
 	for i in range(3):
 		drop("chest", walkable_position(150 + i * 55), 1)
-	ui.announce("SURVIVE THE NIGHT", "Defeat the final guardian at 10:00. Follow the chest compass.")
+	ui.announce(Data.LEVELS[level_id].name.to_upper(), Data.DIFFICULTIES[difficulty_tier].name + " · Defeat the final guardian at 10:00.")
 
 func _physics_process(delta):
 	if ended:
@@ -154,7 +162,7 @@ func _physics_process(delta):
 	spawn_clock -= delta
 	if spawn_clock <= 0 and elapsed < DURATION:
 		var minute = int(elapsed / 60)
-		spawn_clock = maxf(0.13, 0.95 - minute * 0.085)
+		spawn_clock = maxf(0.13, 0.95 - minute * 0.085) / Data.LEVELS[level_id].pressure
 		var count = 1 + int(minute / 3)
 		for i in range(count):
 			if enemies.size() >= 180:
@@ -167,6 +175,8 @@ func _physics_process(delta):
 				type = "tank"
 			if elapsed > 150 and roll > 0.88:
 				type = "caster"
+			if level_id == "orchard" and elapsed > 20 and roll < 0.4: type = "bat"
+			if level_id == "pasture" and elapsed > 65 and roll > 0.75: type = "caster"
 			spawn_enemy(type)
 	elite_clock -= delta
 	if elite_clock <= 0 and elapsed < DURATION:
@@ -475,7 +485,7 @@ func collect(item):
 						return
 			for weapon in Data.EVOLUTIONS:
 				var recipe = Data.EVOLUTIONS[weapon]
-				if ranks.get(weapon, 0) >= 5 and ranks.get(recipe[0], 0) >= 1 and not evolved.has(weapon):
+				if ranks.get(weapon, 0) >= Data.MAX_RANK and ranks.get(recipe[0], 0) >= 1 and not evolved.has(weapon):
 					evolved[weapon] = true
 					pending_evolutions.append(weapon)
 					ui.refresh_inventory()
@@ -494,7 +504,7 @@ func owned_count(weapons: bool) -> int:
 func eligible_upgrades() -> Array:
 	var pool: Array = []
 	for key in Data.UPGRADES:
-		if ranks.get(key, 0) >= Data.UPGRADES[key][3] or banned.has(key):
+		if (not Data.equipment_owned(save, key) and ranks.get(key, 0) == 0) or ranks.get(key, 0) >= Data.UPGRADES[key][3] or banned.has(key):
 			continue
 		var weapon = key in Data.WEAPONS
 		var limit = Data.slot_limit(save, weapon)
@@ -539,7 +549,7 @@ func show_treasure():
 	play_sound("upgrade")
 	offers.clear()
 	offer_rarities.clear()
-	var pool = Data.ITEMS.keys().filter(func(key): return items.get(key, 0) < 3)
+	var pool = Data.ITEMS.keys().filter(func(key): return Data.equipment_owned(save, key, true) and items.get(key, 0) < Data.MAX_ITEM_LEVEL)
 	while offers.size() < 1 and not pool.is_empty():
 		var weights: Array[float] = []
 		var total = 0.0
@@ -564,7 +574,7 @@ func show_treasure():
 	get_tree().paused = true
 
 func offered_rank(key: String) -> int:
-	return mini(5, ranks.get(key, 0) + 1 + offer_rarities.get(key, 0))
+	return mini(Data.MAX_RANK, ranks.get(key, 0) + 1 + offer_rarities.get(key, 0))
 
 func choose_upgrade(key: String):
 	if not offers.has(key):
@@ -579,8 +589,8 @@ func choose_upgrade(key: String):
 	elif key == "gold":
 		coins += maxi(15, last_chest_paid) if offer_kind == "item" else 15
 	elif offer_kind == "item":
-		items[key] = mini(3, items.get(key, 0) + 1)
-		ui.announce(Data.ITEMS[key][0].to_upper(), "Stack %d / 3  |  %s" % [items[key], Data.ITEMS[key][1]])
+		items[key] = mini(Data.MAX_ITEM_LEVEL, items.get(key, 0) + 1)
+		ui.announce(Data.ITEMS[key][0].to_upper(), "Level %d / 10  |  %s" % [items[key], Data.ITEMS[key][1]])
 	else:
 		var old_rank = ranks.get(key, 0)
 		ranks[key] = offered_rank(key)
@@ -598,7 +608,7 @@ func choose_upgrade(key: String):
 		if synergy_active(synergy) and not previously_active.has(synergy):
 			activated.append(Data.SYNERGIES[synergy][0])
 	if not activated.is_empty():
-		ui.announce("SYNERGY ACTIVE", " + ".join(activated) + "  /  Details in ESC > Synergies")
+		ui.announce("SYNERGY ACTIVE", " + ".join(activated) + "  /  Details in ESC > Loadout")
 		play_sound("upgrade")
 	offers.clear()
 	ui.refresh_inventory()
@@ -635,11 +645,12 @@ func finish(won: bool):
 		return
 	ended = true
 	play_sound("evolution" if won else "defeat")
-	gold_earned = int(elapsed / 15) + (50 if won else 0)
+	gold_earned = roundi((int(elapsed / 15) + (50 if won else 0)) * reward_multiplier)
 	save.gold += gold_earned
 	save.best = maxi(save.best, int(elapsed))
 	if won:
 		save.wins += 1
+		save.level_clears[level_id] = maxi(save.level_clears.get(level_id, 0), difficulty_tier + 1)
 	Data.write_save(save)
 	ui.show_result(won)
 	get_tree().paused = true
@@ -858,7 +869,7 @@ func ascension_ready(key: String) -> bool:
 	if ascension != "" or not Data.ASCENSIONS.has(key):
 		return false
 	var rule = Data.ASCENSIONS[key]
-	return guardians_defeated >= 2 and evolved.has(rule[1]) and evolved.has(rule[2]) and ranks.get(rule[3], 0) >= 5 and ranks.get(rule[4], 0) >= 5 and items.get(rule[5], 0) >= 3
+	return guardians_defeated >= 2 and evolved.has(rule[1]) and evolved.has(rule[2]) and ranks.get(rule[3], 0) >= Data.MAX_RANK and ranks.get(rule[4], 0) >= Data.MAX_RANK and items.get(rule[5], 0) >= 3
 
 func ascension_damage(source: String) -> float:
 	if ascension != "" and source in [Data.ASCENSIONS[ascension][1], Data.ASCENSIONS[ascension][2]]:
@@ -875,13 +886,13 @@ func ascension_progress(key: String) -> String:
 	for weapon in [rule[1], rule[2]]:
 		lines.append(("[OK] " if evolved.has(weapon) else "[NEED] ") + Data.EVOLUTIONS[weapon][1] + " evolution")
 	for tome in [rule[3], rule[4]]:
-		lines.append("%s: rank %d / 5" % [Data.UPGRADES[tome][0], ranks.get(tome, 0)])
-	lines.append("%s: %d / 3 stacks" % [Data.ITEMS[rule[5]][0], items.get(rule[5], 0)])
+		lines.append("%s: rank %d / 10" % [Data.UPGRADES[tome][0], ranks.get(tome, 0)])
+	lines.append("%s: %d stacks (needs 3)" % [Data.ITEMS[rule[5]][0], items.get(rule[5], 0)])
 	lines.append("ACTIVE for this run" if ascension == key else "Another Ascension already claimed" if ascension != "" else "READY: collect a chest" if ascension_ready(key) else "Complete the recipe, then collect a chest")
 	return "\n".join(lines)
 
 func projectile_bonus() -> int:
-	return clampi(ranks.get("projectile_count", 0), 0, 5)
+	return clampi(ranks.get("projectile_count", 0), 0, Data.MAX_RANK)
 
 func projectile_speed_multiplier() -> float:
 	return 1.0 + ranks.get("projectile_speed", 0) * 0.2

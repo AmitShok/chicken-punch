@@ -25,9 +25,9 @@ Reference: https://docs.godotengine.org/en/4.5/tutorials/export/exporting_for_we
 
 ## Validation
 
-The Archvale feedback update exports completed successfully. The Windows executable passed a headless startup check; the source build's menus, rewards, pause inspection, and HUD were rendered and inspected with the native renderer. Desktop browser checks cover the exported menu, options, movement, combat, pause, results, and saving across reload.
+The October 23 run-setup and unlock-shop exports completed successfully. The Windows executable passed a headless startup check. Native-renderer captures cover the home menu, character/level/difficulty setup, all shop tabs, training, options, and each of the three levels. Browser checks cover the exported setup-to-run transition, movement, pause inspection, results, return to menu and the unlock shop, with no browser runtime errors.
 
-The source tests cover feedback caps, cleanup, damage preservation, knockback recovery, pause behavior, reduced motion, progression, tomes and Ascensions. An accelerated source-game soak reached victory after all three guardians. These checks do not certify mobile, Safari or Firefox, or a full manual Windows playthrough of this update.
+Automated checks cover save migration, shop purchase conditions and persistence, locked reward pools, all level-10 caps, compass exclusions, actual run selection, level layouts, tier rewards, combat and evolutions. An accelerated level-10 stress run reached victory at 607 seconds with all three guardians defeated. This is a stability check with boosted player health, not a difficulty/balance certification. These checks do not certify mobile, Safari or Firefox, or a full manual Windows playthrough.
 
 The ZIPs include the ChickenPack, Ninja Adventure and Travel Book Lite licenses. Travel Book Lite is by Crusenho Agus Hennihuno: https://crusenho.itch.io/complete-ui-book-styles-pack. UI textures are resized/tinted in-engine; source sprites are unchanged.
 

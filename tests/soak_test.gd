@@ -16,9 +16,9 @@ func start():
 	scene = load("res://scenes/world/world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
-	scene.ranks = {"thunder": 5, "frost": 5, "sickle": 5, "shell": 5, "crit": 5, "duration": 5, "magnet": 5, "might": 5}
+	scene.ranks = {"thunder": 10, "frost": 10, "sickle": 10, "shell": 10, "crit": 10, "duration": 10, "magnet": 10, "might": 10}
 	for key in Data.ITEMS:
-		scene.items[key] = 3
+		scene.items[key] = 10
 	scene.evolved = {"thunder": true, "frost": true, "sickle": true, "shell": true}
 	scene.player.max_hp = 100000
 	scene.player.hp = 100000
