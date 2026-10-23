@@ -56,17 +56,23 @@ func tick(delta: float):
 func chain(first: Node, jumps: int, damage: float):
 	var hit: Array = []
 	var target = first
+	var previous_position := Vector2.ZERO
 	while is_instance_valid(target) and hit.size() < jumps:
 		hit.append(target)
 		var chilled = target.slow_time > 0
 		var pos = target.global_position
 		run.effect(pos, "FX/Elemental/Thunder/SpriteSheet.png", Vector2i(16, 28), 0.35, 1.4 * run.weapon_size_multiplier())
-		# Limit overlapping columns in endgame builds without limiting chain damage.
-		if run.get_tree().get_nodes_in_group("sky_strikes").size() < 32:
+		# Only the first target is struck from the sky; subsequent hits conduct along arcs.
+		if hit.size() == 1 and run.get_tree().get_nodes_in_group("sky_strikes").size() < 32:
 			var strike = preload("res://scripts/survival/lightning_strike.gd").new()
 			strike.position = pos
 			strike.configure(run.weapon_size_multiplier(), run.evolved.has("thunder"))
 			run.add_child(strike)
+		elif hit.size() > 1 and run.get_tree().get_nodes_in_group("chain_arcs").size() < 64:
+			var arc = preload("res://scripts/survival/chain_lightning.gd").new()
+			arc.configure(previous_position, pos, run.weapon_size_multiplier(), run.evolved.has("thunder"), hit.size() - 2)
+			run.add_child(arc)
+		previous_position = pos
 		run.deal_damage(target, damage, Vector2.ZERO, "thunder")
 		var next_target = null
 		var closest = 115.0 * run.area_multiplier() * run.weapon_size_multiplier() * (1.6 if chilled else 1.0)

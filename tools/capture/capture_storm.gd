@@ -22,8 +22,9 @@ func capture():
 		enemy.max_hp = 1000
 		targets.append(enemy)
 	run.arsenal.chain(targets[0], 3, 20)
+	await create_timer(0.13).timeout
 	paused = true
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(OS.get_cmdline_user_args()[0] + "/storm-call.png")
+	root.get_texture().get_image().save_png(OS.get_cmdline_user_args()[0] + "/chain-lightning.png")
 	print("Storm native renderer capture complete")
 	quit()
