@@ -4,6 +4,12 @@ extends CharacterBody2D
 @export var hp = 10.0
 @export var bone_scene: PackedScene
 @export var knockback_friction = 0.1
+static var animation_cache: Dictionary = {}
+var navigation_clock = 0.0
+var separation_clock = 0.0
+var separation_force = Vector2.ZERO
+static var flash_materials: Array[ShaderMaterial] = []
+var previous_flash = 0.0
 var run: Node
 var kind = "dog"
 var elite = false
@@ -32,6 +38,8 @@ var health_trail_delay = 0.0
 var hit_material: ShaderMaterial
 var slow_time = 0.0
 var steam_lock = 0.0
+var roast_stacks = 0
+var roast_time = 0.0
 var slow_factor = 1.0
 
 func _ready():
@@ -43,8 +51,14 @@ func _ready():
 	$HitBox.monitorable = false
 	$HitBox.collision_layer = 0
 	$Sprite2D.scale = Vector2.ONE
-	hit_material = ShaderMaterial.new()
-	hit_material.shader = preload("res://assets/shaders/hit_flash.gdshader")
+	if flash_materials.is_empty():
+		for step in range(5):
+			var material = ShaderMaterial.new()
+			material.shader = preload("res://assets/shaders/hit_flash.gdshader")
+			material.set_shader_parameter("flash_amount", step / 4.0)
+			flash_materials.append(material)
+	hit_material = flash_materials[0]
+	separation_clock = (get_instance_id() % 6) * 0.02
 	$Sprite2D.material = hit_material
 
 func configure(director: Node, type: String, champion: bool = false):
@@ -72,20 +86,22 @@ func configure(director: Node, type: String, champion: bool = false):
 			frame_size = Vector2(62, 52)
 			boss = true
 			final_guardian = run.boss_stage == 3
-			movement_speed = 22
-			hp = 600 + run.elapsed * 3
-			damage = 24
+			movement_speed = 34
+			hp = (1100 + run.elapsed * 4) * (2.0 if run.boss_stage == 3 else 1.35 if run.boss_stage == 2 else 1.0)
+			damage = 30
 			radius = 18
-	var tex = load("res://assets/Ninja Adventure - Asset Pack/" + path)
-	var frames = SpriteFrames.new()
-	for i in range(mini(2, int(tex.get_width() / frame_size.x))):
-		var atlas = AtlasTexture.new()
-		atlas.atlas = tex
-		atlas.region = Rect2(Vector2(i * frame_size.x, 0), frame_size)
-		frames.add_frame("default", atlas)
-	$Sprite2D.sprite_frames = frames
+	if not animation_cache.has(path):
+		var tex = load("res://assets/Ninja Adventure - Asset Pack/" + path)
+		var frames = SpriteFrames.new()
+		for i in range(mini(2, int(tex.get_width() / frame_size.x))):
+			var atlas = AtlasTexture.new()
+			atlas.atlas = tex
+			atlas.region = Rect2(Vector2(i * frame_size.x, 0), frame_size)
+			frames.add_frame("default", atlas)
+		animation_cache[path] = frames
+	$Sprite2D.sprite_frames = animation_cache[path]
 	$Sprite2D.play("default")
-	hp *= run.difficulty
+	hp *= run.difficulty * 1.25
 	if elite and not boss:
 		hp *= 5
 		movement_speed *= 1.12
@@ -93,17 +109,17 @@ func configure(director: Node, type: String, champion: bool = false):
 		radius = 13
 	rest_scale = $Sprite2D.scale
 	base_hp = hp
-	base_damage = damage * sqrt(run.difficulty)
+	base_damage = damage * sqrt(run.difficulty) * 1.15
 	max_hp = hp
 	update_scaling()
 
 func update_scaling():
 	var minutes = run.elapsed / 60.0
-	var health_factor = 1.0 + minutes * 0.42 + minutes * minutes * 0.045
+	var health_factor = 1.0 + minutes * 0.7 + minutes * minutes * 0.12
 	var fraction = hp / max_hp
 	max_hp = base_hp * health_factor
 	hp = max_hp * fraction
-	damage = base_damage * (1.0 + minutes * 0.12)
+	damage = base_damage * (1.0 + minutes * 0.22 + minutes * minutes * 0.015) * (1.0 + maxf(0, run.elapsed - 600) / 90.0)
 
 func _physics_process(delta):
 	if dead or not is_instance_valid(run) or run.ended:
@@ -114,9 +130,11 @@ func _physics_process(delta):
 		update_scaling()
 	age += delta
 	steam_lock = maxf(0, steam_lock - delta)
+	roast_time = maxf(0, roast_time - delta)
+	if roast_time <= 0: roast_stacks = 0
 	slow_time = maxf(0, slow_time - delta)
 	update_feedback(delta)
-	$Sprite2D.modulate = Color("9be5ff") if slow_time > 0 else Color("ffd879") if elite else Color.WHITE
+	$Sprite2D.modulate = Color("9be5ff") if slow_time > 0 else Color("ffad75") if roast_stacks > 0 else Color("ffd879") if elite else Color.WHITE
 	var player = run.player
 	var offset = player.global_position - global_position
 	var distance = offset.length()
@@ -126,22 +144,33 @@ func _physics_process(delta):
 		velocity = Vector2.ZERO
 		if windup <= 0:
 			if boss:
-				for i in range(12):
-					run.enemy_bullet(global_position, Vector2.RIGHT.rotated(i * TAU / 12.0), damage)
+				var count = 16 if run.elapsed < 360 else 20
+				for i in range(count):
+					run.enemy_bullet(global_position, Vector2.RIGHT.rotated(i * TAU / count + age * 0.22), damage)
+				for i in range(-1,2):
+					run.enemy_bullet(global_position, (attack_target - global_position).normalized().rotated(i * 0.18), damage)
 			else:
-				run.enemy_bullet(global_position, (attack_target - global_position).normalized(), damage)
+				var spread = 1 if run.elapsed >= 300 else 0
+				for i in range(-spread, spread + 1):
+					run.enemy_bullet(global_position, (attack_target - global_position).normalized().rotated(i * 0.2), damage)
 	elif (kind == "caster" or boss) and attack_clock <= 0:
 		windup = 0.8
 		attack_target = player.global_position
-		attack_clock = 3.5 if boss else 3.0
+		attack_clock = maxf(1.8, 2.8 - maxf(0,run.elapsed - 600) / 180) if boss else 2.6
 	else:
 		var dir = offset.normalized()
 		if kind == "caster" and distance < 125:
 			dir *= -0.4
-		velocity = dir * movement_speed * (slow_factor if slow_time > 0 else 1.0)
+		velocity = dir * movement_speed * (1.0 + minf(12, run.elapsed / 60) * 0.035) * (slow_factor if slow_time > 0 else 1.0)
 	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 500 * delta)
-	velocity += knockback_velocity + run.separation(self)
-	if test_move(global_transform, velocity.normalized() * 8):
+	separation_clock -= delta
+	if separation_clock <= 0:
+		separation_clock = 0.12
+		separation_force = run.separation(self)
+	velocity += knockback_velocity + separation_force
+	navigation_clock -= delta
+	if navigation_clock <= 0 and test_move(global_transform, velocity.normalized() * 8):
+		navigation_clock = 0.12
 		var tangent = velocity.rotated(PI / 2)
 		if test_move(global_transform, tangent.normalized() * 8):
 			tangent = -tangent
@@ -152,7 +181,7 @@ func _physics_process(delta):
 		player.take_damage(damage * run.difficulty)
 	if distance > 700 and not boss and not elite:
 		queue_free()
-	queue_redraw()
+	if elite or boss or health_reveal > 0: queue_redraw()
 
 func take_damage(amount: float, direction: Vector2 = Vector2.ZERO, knockback_interval: float = 0.16):
 	if dead:
@@ -161,19 +190,19 @@ func take_damage(amount: float, direction: Vector2 = Vector2.ZERO, knockback_int
 	health_trail_delay = 0.18
 	health_reveal = 1.6
 	hp -= amount
-	run.play_sound("impact")
-	flash = 0.08
-	if run.save.get("combat_feedback", true):
-		$Sprite2D.scale = rest_scale * Vector2(1.16, 0.84)
 	if not direction.is_zero_approx():
 		last_impact_direction = direction.normalized()
 		if knockback_lock <= 0:
 			knockback_velocity = last_impact_direction * (25 if boss else 95)
 			knockback_lock = knockback_interval
 	if impact_lock <= 0:
+		run.play_sound("impact")
+		flash = 0.08
+		if run.save.get("combat_feedback", true):
+			$Sprite2D.scale = rest_scale * Vector2(1.16, 0.84)
+		run.floating_text(global_position, str(int(amount)), Color("fff0c2"))
 		run.feedback.impact(global_position, last_impact_direction)
 		impact_lock = 0.10
-	run.floating_text(global_position, str(int(amount)), Color("fff0c2"))
 	if hp <= 0:
 		dead = true
 		run.enemy_died(self)
@@ -195,18 +224,27 @@ func _draw():
 		draw_arc(Vector2.ZERO, radius + 7 + windup * 12, 0, TAU, 24, Color("ff795e"), 2)
 
 func apply_slow(duration: float, factor: float):
+	if boss:
+		duration = minf(duration, 2.0)
+		factor = maxf(factor, 0.7)
+	elif elite:
+		factor = maxf(factor, 0.5)
 	slow_time = maxf(slow_time, duration)
 	slow_factor = factor if slow_time <= duration else minf(slow_factor, factor)
 
 func update_feedback(delta: float):
 	knockback_lock = maxf(0, knockback_lock - delta)
 	impact_lock = maxf(0, impact_lock - delta)
+	if health_reveal > 0 and health_reveal <= delta: queue_redraw()
 	health_reveal = maxf(0, health_reveal - delta)
 	health_trail_delay = maxf(0, health_trail_delay - delta)
 	flash = maxf(0, flash - delta)
 	var motion = run.save.get("combat_feedback", true)
 	$Sprite2D.scale = $Sprite2D.scale.lerp(rest_scale, minf(1, delta * 22)) if motion else rest_scale
-	hit_material.set_shader_parameter("flash_amount", minf(1, flash / 0.035))
+	if flash > 0 or previous_flash > 0:
+		hit_material = flash_materials[clampi(roundi(flash / 0.035 * 4), 0, 4)]
+		$Sprite2D.material = hit_material
+	previous_flash = flash
 	if not motion:
 		health_trail = maxf(0, hp / max_hp)
 	elif health_trail_delay <= 0:

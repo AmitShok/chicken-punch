@@ -7,6 +7,21 @@ const Interface = preload("res://scripts/survival/interface.gd")
 const ENEMY = preload("res://scenes/actors/enemy.tscn")
 const Arsenal = preload("res://scripts/survival/arsenal.gd")
 const DURATION = 600.0
+const MAX_FIRE_PATCHES = 160
+const MAX_PICKUPS_PER_KIND = 96
+const MAX_IMPACT_EFFECTS = 48
+const MAX_ENEMIES = 180
+var combat_grid: Dictionary = {}
+var combat_grid_frame = -1
+var combat_grid_dirty = true
+var pickup_registry: Dictionary = {}
+var impact_effects = 0
+var large_effects = 0
+var fire_damage_clock = 0.0
+var projectile_pool: Array = []
+var projectile_reserve: Node2D
+var target_scan_clock = 0.0
+var cached_target: Node
 var feedback: Node2D
 var arsenal: RefCounted
 var ascension = ""
@@ -43,7 +58,7 @@ var enemies: Array = []
 var arena_bounds = Rect2(-540, -400, 1320, 1000)
 var cooldowns: Dictionary = {"egg": 0.0, "shuriken": 0.0, "fire": 0.0, "orbit": 0.0}
 var spawn_clock = 0.0
-var elite_clock = 45.0
+var elite_clock = 35.0
 var treasure_clock = 25.0
 var boss_stage = 0
 var final_boss_dead = false
@@ -70,6 +85,11 @@ func _ready():
 	player = $Chicken
 	player.run = self
 	arsenal = Arsenal.new(self)
+	projectile_reserve = Node2D.new()
+	projectile_reserve.name = "ProjectileReserve"
+	projectile_reserve.process_mode = Node.PROCESS_MODE_DISABLED
+	projectile_reserve.hide()
+	add_child(projectile_reserve)
 	save = Data.read_save()
 	feedback = preload("res://scripts/survival/feedback.gd").new()
 	feedback.run = self
@@ -158,14 +178,16 @@ func _physics_process(delta):
 		if not crowd_grid.has(cell):
 			crowd_grid[cell] = []
 		crowd_grid[cell].append(enemy)
+	rebuild_combat_grid()
+	target_scan_clock -= delta
 	elapsed += delta
 	spawn_clock -= delta
-	if spawn_clock <= 0 and elapsed < DURATION:
+	if spawn_clock <= 0 and not final_boss_dead:
 		var minute = int(elapsed / 60)
-		spawn_clock = maxf(0.13, 0.95 - minute * 0.085) / Data.LEVELS[level_id].pressure
-		var count = 1 + int(minute / 3)
+		spawn_clock = maxf(0.12, 0.85 - minute * 0.075) / Data.LEVELS[level_id].pressure
+		var count = 2 + int(minute / 2)
 		for i in range(count):
-			if enemies.size() >= 180:
+			if enemies.size() >= MAX_ENEMIES - 4:
 				break
 			var type = "dog"
 			var roll = rng.randf()
@@ -179,8 +201,8 @@ func _physics_process(delta):
 			if level_id == "pasture" and elapsed > 65 and roll > 0.75: type = "caster"
 			spawn_enemy(type)
 	elite_clock -= delta
-	if elite_clock <= 0 and elapsed < DURATION:
-		elite_clock = 55
+	if elite_clock <= 0 and not final_boss_dead:
+		elite_clock = maxf(20, 48 - elapsed / 30)
 		spawn_enemy("tank", true)
 		ui.announce("ELITE ON THE HUNT", "Gold-ring enemies drop treasure. Prepare an evolution!")
 	treasure_clock -= delta
@@ -191,7 +213,7 @@ func _physics_process(delta):
 	if (boss_stage == 0 and elapsed >= 180) or (boss_stage == 1 and elapsed >= 360) or (boss_stage == 2 and elapsed >= DURATION):
 		boss_stage += 1
 		spawn_enemy("boss", true)
-		ui.announce("GUARDIAN %d / 3" % boss_stage, "Watch the red windup. Dash through gaps in the volley.")
+		ui.announce("GUARDIAN %d / 3" % boss_stage, "Rotating rings and aimed volleys. The horde keeps coming.")
 	for key in cooldowns:
 		cooldowns[key] -= delta
 	attack_weapons()
@@ -217,11 +239,13 @@ func walkable_position(distance: float) -> Vector2:
 	return player.global_position + Vector2(0, 30)
 
 func spawn_enemy(type: String, champion: bool = false):
+	if type != "boss" and enemies.size() >= MAX_ENEMIES: return null
 	var enemy = ENEMY.instantiate()
 	enemy.position = walkable_position(310)
 	add_child(enemy)
 	enemy.configure(self, type, champion)
 	enemies.append(enemy)
+	combat_grid_dirty = true
 	return enemy
 
 func power() -> float:
@@ -231,6 +255,7 @@ func area_multiplier() -> float:
 	return 1.0 + ranks.get("area", 0) * 0.18
 
 func nearest_enemy():
+	if target_scan_clock > 0 and is_instance_valid(cached_target) and not cached_target.dead and cached_target.global_position.distance_squared_to(player.global_position) < 115600: return cached_target
 	var result = null
 	var distance = 340.0 * 340.0
 	for enemy in enemies:
@@ -239,6 +264,8 @@ func nearest_enemy():
 			if d < distance:
 				result = enemy
 				distance = d
+	cached_target = result
+	target_scan_clock = 0.08
 	return result
 
 func attack_weapons():
@@ -295,30 +322,53 @@ func update_fire_trail():
 
 func spawn_fire_patch(pos: Vector2):
 	cooldowns.fire = fire_spacing() / 100.0
-	play_sound("fire")
 	var fire_rank = ranks.get("fire", 0)
-	var sprite = Sprite2D.new()
-	sprite.texture = load(Data.PACK + "FX/Particle/Fire.png")
-	sprite.hframes = maxi(1, int(sprite.texture.get_width() / 8))
+	var life = (2.0 + fire_rank * 0.5) * duration_multiplier()
+	var damage = (4 + fire_rank * 3) * power()
+	# Sub-pixel piles and standing still refresh existing fire instead of multiplying DPS.
+	for existing in hazards:
+		if existing.sprite.position.distance_squared_to(pos) < 16:
+			existing.life = maxf(existing.life, life)
+			existing.damage = maxf(existing.damage, damage)
+			return
+	play_sound("fire")
+	var sprite: Sprite2D
+	if hazards.size() >= MAX_FIRE_PATCHES:
+		var oldest = hazards.pop_front()
+		sprite = oldest.sprite
+	else:
+		sprite = Sprite2D.new()
+		sprite.texture = preload("res://assets/Ninja Adventure - Asset Pack/FX/Particle/Fire.png")
+		sprite.hframes = 12
+		add_child(sprite)
+	sprite.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	sprite.frame = 0
 	sprite.position = pos
 	sprite.scale = Vector2.ONE * area_multiplier() * weapon_size_multiplier() * (1.6 if evolved.has("fire") else 1)
-	if evolved.has("fire"):
+	if evolved.has("fire") and sprite.get_child_count() == 0:
 		var phoenix = Sprite2D.new()
 		phoenix.texture = Data.icon("fire", false, true)
 		phoenix.position.y = -7
 		sprite.add_child(phoenix)
-	add_child(sprite)
-	hazards.append({"sprite": sprite, "age": 0.0, "life": (2.0 + fire_rank * 0.5) * duration_multiplier(), "tick": 0.0, "radius": 17 * sprite.scale.x, "damage": (4 + fire_rank * 3) * power()})
+	hazards.append({"sprite": sprite, "age": 0.0, "life": life, "tick": 0.0, "radius": 17 * sprite.scale.x, "damage": damage})
 
 func make_shot(pos: Vector2, dir: Vector2, type: String):
-	var shot = Shot.new()
+	var shot = projectile_pool.pop_back() if not projectile_pool.is_empty() else Shot.new()
+	if shot.get_parent(): shot.get_parent().remove_child(shot)
+	shot.reset_projectile()
 	shot.run = self
 	shot.z_index = 1
 	shot.position = pos
 	shot.direction = dir
 	shot.source = type
-	var sprite = Sprite2D.new()
-	sprite.name = "Sprite"
+	var sprite = shot.get_node_or_null("Sprite")
+	if sprite == null:
+		sprite = Sprite2D.new()
+		sprite.name = "Sprite"
+		shot.add_child(sprite)
+	sprite.hframes = 1
+	sprite.rotation = 0
+	sprite.scale = Vector2.ONE
 	if type == "egg":
 		sprite.texture = load("res://assets/sprites/egg_sprite.png")
 	elif type == "sickle":
@@ -344,8 +394,8 @@ func make_shot(pos: Vector2, dir: Vector2, type: String):
 		shot.hit_radius = 4.0 * weapon_size_multiplier()
 		sprite.scale = Vector2.ONE * weapon_size_multiplier()
 	shot.spin = type in ["shuriken", "sickle"]
-	shot.add_child(sprite)
 	add_child(shot)
+	shot.reset_physics_interpolation()
 	feedback.launch(pos, dir, type)
 	return shot
 
@@ -353,7 +403,7 @@ func enemy_bullet(pos: Vector2, dir: Vector2, damage: float):
 	var shot = make_shot(pos, dir, "hostile")
 	shot.hostile = true
 	shot.damage = damage
-	shot.speed = 75
+	shot.speed = 85 + minf(25, elapsed / 24)
 	shot.lifetime = 5
 	shot.modulate = Color("ff937a")
 
@@ -380,6 +430,10 @@ func update_orbits(delta):
 			blast(sprite.position, 15 * area_multiplier() * weapon_size_multiplier(), (5 + rank * 3) * power(), false, "orbit")
 
 func update_hazards(delta):
+	fire_damage_clock -= delta
+	var burn_tick = fire_damage_clock <= 0
+	if burn_tick: fire_damage_clock = 0.4
+	var burning: Dictionary = {}
 	for i in range(hazards.size() - 1, -1, -1):
 		var h = hazards[i]
 		h.life -= delta
@@ -397,13 +451,16 @@ func update_hazards(delta):
 				h.sprite.frame = mini(2, int(h.age * 12.0))
 			else:
 				h.sprite.frame = 3 + int((h.age - 0.25) * 12.0) % 5
-			if h.tick <= 0:
-				h.tick = 0.4
-				blast(h.sprite.position, h.radius, h.damage, false, "fire")
+			if burn_tick:
+				for enemy in nearby_enemies(h.sprite.position, h.radius + 32):
+					if is_instance_valid(enemy) and not enemy.dead and h.sprite.position.distance_squared_to(enemy.global_position) < pow(h.radius + enemy.radius, 2):
+						burning[enemy] = maxf(burning.get(enemy, 0), h.damage)
+	for enemy in burning:
+		if is_instance_valid(enemy) and not enemy.dead: deal_damage(enemy, burning[enemy], Vector2.ZERO, "fire")
 
 func blast(pos: Vector2, radius: float, damage: float, visual: bool = true, source: String = "egg"):
-	for enemy in enemies:
-		if is_instance_valid(enemy) and not enemy.dead and pos.distance_to(enemy.global_position) < radius + enemy.radius:
+	for enemy in nearby_enemies(pos, radius + 32):
+		if is_instance_valid(enemy) and not enemy.dead and pos.distance_squared_to(enemy.global_position) < pow(radius + enemy.radius, 2):
 			deal_damage(enemy, damage, pos.direction_to(enemy.global_position), source)
 	if visual:
 		effect(pos, "FX/Elemental/Explosion/SpriteSheet.png", Vector2i(40, 40), 0.35, radius / 20.0)
@@ -432,14 +489,23 @@ func enemy_died(enemy):
 		drop("gold", enemy.global_position, 1)
 
 func drop(type: String, pos: Vector2, amount: int):
-	# Merge XP at the pickup cap; no experience is silently discarded.
-	if type == "xp" and get_tree().get_nodes_in_group("run_pickups").size() > 220:
-		for item in get_tree().get_nodes_in_group("run_pickups"):
-			if item.kind == "xp":
-				item.value += amount
-				return
+	# Preserve total rewards while bounding every common pickup type, not only XP.
+	if type in ["xp", "gold", "heal"]:
+		var pool: Array = pickup_registry.get(type, []).filter(func(p): return is_instance_valid(p) and not p.is_queued_for_deletion())
+		pickup_registry[type] = pool
+		var nearest = null
+		var distance = INF
+		for existing in pool:
+			var d = existing.position.distance_squared_to(pos)
+			if d < distance:
+				nearest = existing
+				distance = d
+		if nearest != null and (distance < 576 or pool.size() >= MAX_PICKUPS_PER_KIND):
+			nearest.value += amount
+			return nearest
 	var pickup = Pickup.new()
 	pickup.run = self
+	if type in ["xp", "gold", "heal"]: pickup_registry[type].append(pickup)
 	pickup.kind = type
 	pickup.value = amount
 	pickup.chest_free = type == "chest" and amount == 0
@@ -660,6 +726,7 @@ func floating_text(pos: Vector2, message: String, color: Color):
 		return
 	damage_labels += 1
 	var label = Label.new()
+	label.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	label.text = message
 	label.position = pos + Vector2(-7, -18)
 	label.add_theme_font_size_override("font_size", 10)
@@ -724,7 +791,14 @@ func duration_multiplier() -> float:
 	return 1.0 + ranks.get("duration", 0) * 0.2
 
 func critical_chance() -> float:
-	return minf(0.85, ranks.get("crit", 0) * 0.08 + items.get("lens", 0) * 0.08)
+	return ranks.get("crit", 0) * 0.08 + items.get("lens", 0) * 0.08
+
+func critical_tier(roll: float) -> int:
+	var chance = critical_chance()
+	return floori(chance) + (1 if roll < fmod(chance, 1.0) else 0)
+
+func slow_roast_ready() -> bool:
+	return evolved.has("fire") and items.get("powder", 0) >= 3 and ranks.get("duration", 0) >= 5
 
 func pickup_radius() -> float:
 	return 45.0 + ranks.get("magnet", 0) * 30 + items.get("magnet_stone", 0) * 25
@@ -750,9 +824,17 @@ func deal_damage(enemy: Node, amount: float, direction: Vector2, source: String)
 		enemy.slow_time = 0
 		enemy.steam_lock = 3.0
 		steam_burst.call_deferred(enemy.global_position, amount)
-	var critical = rng.randf() < critical_chance()
-	if critical:
-		amount *= 2
+	# Heat is one counter per enemy; it never creates recursive damage events.
+	if source == "fire" and slow_roast_ready():
+		enemy.roast_stacks = mini(30, enemy.roast_stacks + 1)
+		enemy.roast_time = 2.0 * duration_multiplier()
+	elif source in Data.WEAPONS and enemy.roast_time > 0:
+		amount *= 1.0 + enemy.roast_stacks * 0.08
+	var tier = critical_tier(rng.randf())
+	var critical = tier > 0
+	amount *= pow(2.0, tier)
+	if tier >= 2 and items.get("berserk", 0) >= 3 and player.hp < player.max_hp * 0.5:
+		amount *= 2.0
 	var actual = minf(enemy.hp, amount)
 	damage_totals[source] = damage_totals.get(source, 0.0) + actual
 	enemy.take_damage(amount, direction, 0.08 if source in ["sickle", "orbit"] else 0.16)
@@ -765,8 +847,19 @@ func powder_burst(pos: Vector2):
 		blast(pos, 40 * area_multiplier(), 20 * items.get("powder", 0) * power(), true, "powder")
 
 func effect(pos: Vector2, path: String, cell: Vector2i, duration: float, size: float):
+	# Cosmetic effects may be omitted; damage and hostile projectile cues are separate.
+	if impact_effects >= MAX_IMPACT_EFFECTS or pos.distance_squared_to(player.global_position) > 250000: return
+	var large = size > 3.0
+	if large and large_effects >= 6: return
+	if large: large_effects += 1
+	impact_effects += 1
 	var sprite = Sprite2D.new()
+	sprite.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	sprite.texture = load(Data.PACK + path)
+	sprite.tree_exited.connect(func():
+		impact_effects -= 1
+		if large: large_effects -= 1)
+	if large: sprite.modulate.a = 0.45
 	sprite.hframes = maxi(1, sprite.texture.get_width() / cell.x)
 	sprite.vframes = maxi(1, sprite.texture.get_height() / cell.y)
 	sprite.position = pos
@@ -951,3 +1044,37 @@ func try_open_chest(chest = null) -> bool:
 		show_treasure()
 	get_tree().paused = true
 	return true
+
+func rebuild_combat_grid():
+	combat_grid.clear()
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or enemy.dead or enemy.is_queued_for_deletion(): continue
+		var cell = Vector2i((enemy.global_position / 64.0).floor())
+		if not combat_grid.has(cell): combat_grid[cell] = []
+		combat_grid[cell].append(enemy)
+	combat_grid_frame = Engine.get_physics_frames()
+	combat_grid_dirty = false
+
+func enemies_in_rect(bounds: Rect2) -> Array:
+	if combat_grid_dirty or combat_grid_frame != Engine.get_physics_frames(): rebuild_combat_grid()
+	var first = Vector2i((bounds.position / 64.0).floor())
+	var last = Vector2i((bounds.end / 64.0).floor())
+	# Huge endgame blasts are cheaper as one linear pass than hundreds of empty cells.
+	if (last.x - first.x + 1) * (last.y - first.y + 1) > 128: return enemies
+	var result: Array = []
+	for y in range(first.y, last.y + 1):
+		for x in range(first.x, last.x + 1):
+			var cell = Vector2i(x,y)
+			if combat_grid.has(cell): result.append_array(combat_grid[cell])
+	return result
+
+func nearby_enemies(pos: Vector2, radius: float) -> Array:
+	return enemies_in_rect(Rect2(pos - Vector2.ONE * radius, Vector2.ONE * radius * 2))
+
+func recycle_shot(shot: Node2D):
+	if shot.get_parent(): shot.get_parent().remove_child(shot)
+	if projectile_pool.size() >= 192:
+		shot.queue_free()
+		return
+	projectile_reserve.add_child(shot)
+	projectile_pool.append(shot)

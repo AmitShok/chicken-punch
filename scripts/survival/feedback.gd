@@ -10,6 +10,9 @@ const SMOKE = preload("res://assets/Ninja Adventure - Asset Pack/FX/Smoke/Smoke/
 var particles: Array = []
 var launch_clocks: Dictionary = {}
 
+func _ready():
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+
 func enabled() -> bool:
 	return run.save.get("combat_feedback", true)
 

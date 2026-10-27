@@ -76,7 +76,7 @@ func chain(first: Node, jumps: int, damage: float):
 		run.deal_damage(target, damage, Vector2.ZERO, "thunder")
 		var next_target = null
 		var closest = 115.0 * run.area_multiplier() * run.weapon_size_multiplier() * (1.6 if chilled else 1.0)
-		for enemy in run.enemies:
+		for enemy in run.nearby_enemies(pos, closest + 32):
 			if not is_instance_valid(enemy) or enemy.dead or hit.has(enemy):
 				continue
 			var distance = pos.distance_to(enemy.global_position)

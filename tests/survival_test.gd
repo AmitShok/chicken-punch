@@ -67,7 +67,7 @@ func test():
 	scene.boss_stage = 3
 	scene.elapsed = 600
 	var boss = scene.spawn_enemy("boss", true)
-	boss.take_damage(100000)
+	boss.take_damage(boss.hp + 1)
 	check(scene.final_boss_dead, "Final guardian death unlocks victory")
 	scene.finish(true)
 	check(scene.ended and paused, "Victory stops combat")

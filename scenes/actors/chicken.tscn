@@ -192,6 +192,7 @@ position = Vector2(0, 3)
 shape = SubResource("CircleShape2D_45cuv")
 
 [node name="Camera2D" type="Camera2D" parent="."]
+process_callback = 0
 position = Vector2(0, 2)
 scale = Vector2(0.19113062, -3.9200208)
 zoom = Vector2(1.5, 1.5)

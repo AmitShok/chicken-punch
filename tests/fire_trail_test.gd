@@ -49,6 +49,6 @@ func test():
 	run.cooldowns.fire = 0
 	var count = run.hazards.size()
 	run.update_fire_trail()
-	check(run.hazards.size() == count+1, "Stationary fire still works")
+	check(run.hazards.size() == count, "Stationary fire refreshes an existing nearby patch without stacking")
 	print("TRAIL RESULT: ",checks," checks, ",failures," failures")
 	quit(1 if failures else 0)

@@ -1,5 +1,6 @@
 extends RefCounted
 
+static var icon_cache: Dictionary = {}
 static var save_path = "user://coop_save.cfg"
 const MAX_RANK = 10
 const MAX_ITEM_LEVEL = 10
@@ -35,7 +36,7 @@ const UPGRADES = {
 	"projectile_size": ["Giant Hatch", "+20% weapon size and hit radius per rank. Also enlarges explosions, fire and lightning reach.", PACK + "Items/Resource/BarMithril.png", MAX_RANK],
 	"egg": ["Egg Barrage", "Another egg per volley; +4 damage.", "res://assets/sprites/egg_sprite.png", MAX_RANK],
 	"shuriken": ["Razor Feathers", "Piercing fans of shuriken. More blades per rank.", PACK + "FX/Projectile/Shuriken.png", MAX_RANK],
-	"fire": ["Hot Foot", "Leave burning ground behind you. More damage and duration.", PACK + "Items/Scroll/ScrollFire.png", MAX_RANK],
+	"fire": ["Hot Foot", "Leave burning ground behind you. More damage and duration. Overlapping flames do not stack.", PACK + "Items/Scroll/ScrollFire.png", MAX_RANK],
 	"orbit": ["Coop Guard", "Orbiting blades protect your personal space.", PACK + "Items/Weapons/Sai/Sprite.png", MAX_RANK],
 	"might": ["Fighting Spirit", "DAMAGE: +20% damage to every weapon per rank.", PACK + "Items/Weapons/Sword/Sprite.png", MAX_RANK],
 	"haste": ["Quick Hatch", "RELOAD SPEED: 10% shorter attack cooldown per rank. Evolves Egg Barrage.", PACK + "Items/Object/Hourglass.png", MAX_RANK],
@@ -48,7 +49,7 @@ const UPGRADES = {
 	"frost": ["Frost Quills", "Piercing ice shards slow enemies by 45% for 2 seconds.", PACK + "Items/Scroll/ScrollIce.png", MAX_RANK],
 	"sickle": ["Harvest Moon", "A spinning sickle returns to you, hitting again on its way back.", PACK + "Items/Tool/Sickle.png", MAX_RANK],
 	"shell": ["Shell Shock", "Launch explosive shells at the nearest enemy.", PACK + "Items/Resource/Rock.png", MAX_RANK],
-	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal double damage.", PACK + "Items/Resource/GemYellow.png", MAX_RANK],
+	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits.", PACK + "Items/Resource/GemYellow.png", MAX_RANK],
 	"duration": ["Long Summer", "Extends the duration of effects such as lingering fire and icy slows by 20% per rank.", PACK + "Items/Scroll/ScrollPlant.png", MAX_RANK],
 	"regen": ["Second Wind", "Recover 0.4 health per second.", PACK + "Items/Potion/LifePot.png", MAX_RANK]
 }
@@ -61,7 +62,7 @@ const RARITY_COLORS = [Color("92713a"), Color("39754e"), Color("8b4a9b")]
 const ITEMS = {
 	"key": ["Coop Key", "Chance to open paid chests for free without raising prices: stacks / (stacks + 10).", PACK + "Items/Treasure/GoldKey.png", 0],
 	"clover": ["Lucky Seed", "+6% rare-upgrade chance per stack; improves rare chest loot odds.", PACK + "Items/Food/Seed3.png", 0],
-	"lens": ["Hawk Eye", "+8% critical chance per stack. Critical hits deal double damage.", PACK + "Items/Resource/GemYellow.png", 1],
+	"lens": ["Hawk Eye", "+8% critical chance per stack. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits.", PACK + "Items/Resource/GemYellow.png", 1],
 	"honey": ["Wild Honey", "Regenerate 0.3 health per second per stack.", PACK + "Items/Food/Honey.png", 0],
 	"lunch": ["Packed Lunch", "Heal 12 health per stack whenever you open a chest.", PACK + "Items/Food/Onigiri.png", 0],
 	"magnet_stone": ["Lodestone", "+25 pickup radius per stack.", PACK + "Items/Resource/BarMithril.png", 0],
@@ -210,6 +211,11 @@ static func write_save(data: Dictionary) -> void:
 
 
 static func icon(key: String, item: bool = false, evolved: bool = false) -> Texture2D:
+	var cache_key = key + str(item) + str(evolved)
+	if not icon_cache.has(cache_key): icon_cache[cache_key] = load_icon(key, item, evolved)
+	return icon_cache[cache_key]
+
+static func load_icon(key: String, item: bool = false, evolved: bool = false) -> Texture2D:
 	if not item:
 		if evolved and key in WEAPONS: return load("res://assets/Coop/evo_" + key + ".png")
 		if key not in WEAPONS: return load("res://assets/Coop/tome_" + key + ".png")

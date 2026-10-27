@@ -21,6 +21,8 @@ func test():
 	for i in range(40): run.feedback.echo(enemy.get_node("Sprite2D"), Vector2.ZERO, Color.WHITE, 0.1)
 	check(run.feedback.ghosts == 24, "Crowd effects are capped")
 	await create_timer(0.25).timeout
+	await process_frame
+	await process_frame
 	check(run.feedback.ghosts == 0, "Effects clean up after expiry")
 	# Ranged crowd control must not refresh on every rapid hit, but damage must.
 	enemy.hp = 100
