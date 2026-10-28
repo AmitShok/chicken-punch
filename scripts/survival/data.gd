@@ -229,6 +229,43 @@ static func record_run(data: Dictionary, run: Dictionary) -> Array:
 	data.best = stats.best_time
 	return QUESTS.keys().filter(func(id): return quest_done(data, id) and not before.has(id))
 
+# Developer shortcuts for the hidden F12 page (debug builds only). Each one
+# edits the save the same way normal play would, then writes it.
+static func dev_grant(data: Dictionary, action: String) -> void:
+	match action:
+		"quests":
+			for id in QUESTS:
+				data.stats[QUESTS[id][1]] = maxi(stat(data, QUESTS[id][1]), QUESTS[id][2])
+			data.best = data.stats.best_time
+			data.wins = maxi(data.wins, data.stats.wins)
+		"next_quest":
+			for id in QUESTS:
+				if not quest_done(data, id):
+					data.stats[QUESTS[id][1]] = QUESTS[id][2]
+					data.best = maxi(data.best, data.stats.best_time)
+					break
+		"gold":
+			data.gold += 1000
+		"unlock_all":
+			data.equipment_unlocks = UPGRADES.keys()
+			data.item_unlocks = ITEMS.keys()
+			data.unlocked = CHARACTERS.keys()
+		"training":
+			for key in CHARACTERS:
+				data.training[key] = {"power": 5, "heart": 5, "weapon_slots": 4, "tome_slots": 4}
+		"levels":
+			data.best = maxi(data.best, 600)
+			data.stats.best_time = data.best
+			for level in LEVELS:
+				data.level_clears[level] = DIFFICULTIES.size()
+		"reset":
+			var keep = {"muted": data.muted, "sfx_volume": data.sfx_volume, "music_volume": data.music_volume, "combat_feedback": data.combat_feedback}
+			data.clear()
+			write_save(keep)
+			data.merge(read_save())
+			return
+	write_save(data)
+
 static func purchase_access(data: Dictionary, key: String, item: bool = false) -> bool:
 	if not (ITEMS if item else UPGRADES).has(key): return false
 	if equipment_owned(data, key, item) or not quest_done(data, unlock_quest(key, item)) or data.gold < unlock_cost(key, item): return false

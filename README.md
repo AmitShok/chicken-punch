@@ -31,6 +31,10 @@ Import `project.godot` into Godot and press F6 on `scenes/ui/main_menu.tscn`, or
 
 Downloaded packs retain their original internal structure and licenses. Custom Aseprite sources live beside their exported PNGs. Godot `.uid` and `.import` files are resource metadata and should stay alongside their source files.
 
+## Developer tools
+
+In the editor or a debug export, press F12 on the main menu for a hidden page that grants quests, gold, unlocks, training and levels, or resets progress. In a run, F1 to F5 level up, drop a chest, add coins, skip to the next guardian and max everything owned. Release exports leave these out; see [Exports](docs/release/EXPORTS.md).
+
 ## Checks and captures
 
 Run from the project directory, replacing `godot` with your Godot executable:
@@ -43,6 +47,7 @@ godot --headless --path . --script res://tests/music_map_test.gd
 godot --headless --path . --script res://tests/catalog_test.gd
 godot --headless --path . --script res://tests/quest_test.gd
 godot --headless --path . --script res://tests/content_test.gd
+godot --headless --path . --script res://tests/dev_test.gd
 godot --headless --path . --script res://tools/balance/boss_race.gd
 godot --path . --script res://tools/capture/capture_menu.gd -- <existing-output-directory>
 ```

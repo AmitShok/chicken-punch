@@ -34,3 +34,7 @@ The deliberately extreme rendered benchmark uses 180 unkillable enemies and a ma
 The ZIPs include the ChickenPack, Ninja Adventure and Travel Book Lite licenses. Travel Book Lite is by Crusenho Agus Hennihuno: https://crusenho.itch.io/complete-ui-book-styles-pack. UI textures are resized/tinted in-engine; source sprites are unchanged.
 
 Generated builds are excluded from Git; export presets and source changes are versioned.
+
+## Developer tools
+
+Debug builds (running from the Godot editor, or `--export-debug`) include a hidden developer page: press F12 on the main menu to complete quests, add gold, unlock everything, max training, unlock levels or reset progress. During a run, F1 gains a level, F2 drops a free chest, F3 adds 100 coins, F4 skips to just before the next guardian and F5 maxes everything owned. Release exports (`--export-release`, as above) leave all of these out.

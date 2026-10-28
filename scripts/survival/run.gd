@@ -1256,3 +1256,26 @@ func update_stink_aura(delta: float):
 	stink_sprite.global_position = player.global_position
 	stink_sprite.scale = Vector2.ONE * stink_radius() / 12.0
 	stink_sprite.frame = int(elapsed * 8) % 5
+
+# Debug-build test shortcuts (listed on the main menu's hidden F12 page).
+func dev_key(keycode: int) -> bool:
+	match keycode:
+		KEY_F1:
+			player.gain_xp(player.max_xp - player.current_xp)
+		KEY_F2:
+			drop("chest", player.global_position + Vector2(18, 0), 0)
+		KEY_F3:
+			coins += 100
+		KEY_F4:
+			var next = [180.0, 360.0, DURATION][mini(boss_stage, 2)]
+			elapsed = maxf(elapsed, next - 5.0)
+		KEY_F5:
+			for key in ranks.keys():
+				ranks[key] = Data.MAX_RANK
+				potency[key] = maxf(level(key), float(Data.MAX_RANK))
+			player.movement_speed = 100 * (1 + level("speed") * 0.08)
+			ui.refresh_inventory()
+		_:
+			return false
+	ui.announce("DEV", {KEY_F1: "Level up", KEY_F2: "Free chest dropped", KEY_F3: "+100 coins", KEY_F4: "Skipped to the next guardian", KEY_F5: "Everything owned is rank 10"}[keycode])
+	return true

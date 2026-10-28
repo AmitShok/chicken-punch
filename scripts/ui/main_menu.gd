@@ -15,6 +15,7 @@ var quest_selected = ""
 # Rebuilding a page recreates its list, so selections carry the scroll offset over.
 var list_scroll = 0
 var detail_page: VBoxContainer
+var reset_armed = false
 var upgrades_open = false
 var options_open = false
 
@@ -56,7 +57,7 @@ func build_menu():
 	var stack = VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 0)
 	menu.add_child(stack)
-	var title = UI.title_banner(PAGES[page][2])
+	var title = UI.title_banner(PAGES[page][2] if PAGES.has(page) else "DEVELOPER")
 	title.z_index = 1
 	stack.add_child(title)
 	# Bookmark tabs sit behind the cover's top edge; a paper wallet holds the records.
@@ -90,7 +91,7 @@ func build_menu():
 	var frame = PanelContainer.new()
 	frame.custom_minimum_size = Vector2(880, 486)
 	stack.add_child(frame)
-	var pages = UI.book_spread(frame, {"home": 330, "setup": 300, "quests": 420, "shop": 400, "training": 300, "options": 250}[page])
+	var pages = UI.book_spread(frame, {"home": 330, "setup": 300, "quests": 420, "shop": 400, "training": 300, "options": 250, "dev": 330}[page])
 	match page:
 		"home": build_home(pages[0], pages[1])
 		"setup": build_setup(pages[0], pages[1])
@@ -98,6 +99,7 @@ func build_menu():
 		"quests": build_quests(pages[0], pages[1])
 		"training": build_training_menu(pages[0], pages[1])
 		"options": build_options(pages[0], pages[1])
+		"dev": build_dev(pages[0], pages[1])
 	var footer = Control.new()
 	footer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pages[0].add_child(footer)
@@ -366,6 +368,14 @@ func _on_option_button_pressed():
 	build_menu()
 func close_options(): show_roster()
 func _unhandled_key_input(event: InputEvent):
+	# Hidden developer page: debug builds only (the editor and debug exports).
+	if OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F12:
+		if page == "dev": show_roster()
+		else:
+			page = "dev"
+			build_menu()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel"):
 		if page == "home": _on_option_button_pressed()
 		else: show_roster()
@@ -583,3 +593,39 @@ static func ability_text(key: String) -> Label:
 	var text = UI.label("SPACE  /  %s (%ds): %s\nPASSIVE  /  %s" % [def.ability_name, def.ability_cooldown, def.ability_description, def.passive_description], 16)
 	text.add_theme_color_override("font_color", UI.LEAF)
 	return text
+
+const DEV_ACTIONS = [
+	["quests", "Complete every quest"],
+	["next_quest", "Complete the next quest"],
+	["gold", "Add 1,000 gold"],
+	["unlock_all", "Unlock all gear and defenders"],
+	["training", "Max training for every defender"],
+	["levels", "Unlock all levels and difficulties"],
+	["reset", "Reset all progress"]
+]
+
+func build_dev(left: VBoxContainer, right: VBoxContainer):
+	left.add_child(page_heading("DEBUG BUILDS ONLY  /  F12 TO CLOSE"))
+	for entry in DEV_ACTIONS:
+		var reset = entry[0] == "reset"
+		var row = list_row("PRESS AGAIN TO RESET" if reset and reset_armed else entry[1], null, dev_action.bind(entry[0]))
+		row.name = "Dev_" + entry[0]
+		row.toggle_mode = false
+		if reset: UI.paint_button(row, Color("8a3b35"))
+		left.add_child(row)
+	right.add_child(page_heading("SAVE"))
+	var owned_gear = Data.UPGRADES.keys().filter(func(k): return Data.equipment_owned(save, k)).size()
+	var owned_items = Data.ITEMS.keys().filter(func(k): return Data.equipment_owned(save, k, true)).size()
+	right.add_child(UI.label("Gold %d    Best %d:%02d    Wins %d\nQuests %d / %d    Build tools: reroll %d, skip %d, banish %d\nGear %d / %d    Items %d / %d    Defenders %d / %d" % [save.gold, save.best / 60, save.best % 60, save.wins, Data.quests_completed(save), Data.QUESTS.size(), Data.tool_uses(save, "reroll"), Data.tool_uses(save, "skip"), Data.tool_uses(save, "banish"), owned_gear, Data.UPGRADES.size(), owned_items, Data.ITEMS.size(), save.unlocked.size(), Data.CHARACTERS.size()], 16))
+	right.add_child(page_heading("IN-RUN KEYS  (DEBUG BUILDS)"))
+	right.add_child(UI.label("F1  Gain a level\nF2  Drop a free chest at your feet\nF3  +100 coins\nF4  Skip to 5 seconds before the next guardian\nF5  Max every weapon and tome you own (rank 10)", 16))
+
+func dev_action(action: String):
+	if action == "reset" and not reset_armed:
+		reset_armed = true
+		build_menu()
+		return
+	reset_armed = false
+	Data.dev_grant(save, action)
+	if not save.unlocked.has(preview): preview = save.character
+	build_menu()

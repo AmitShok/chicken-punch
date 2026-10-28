@@ -697,6 +697,9 @@ func _input(event):
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event):
+	if OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo and not modal_open and run.dev_key(event.keycode):
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("interact") and not event.is_echo():
 		run.try_open_chest()
 		get_viewport().set_input_as_handled()
