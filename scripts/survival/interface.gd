@@ -217,7 +217,7 @@ func _ready():
 	health = progress(Vector2(390, 590), Vector2(180, 8), Color("e76a76"), true)
 	xp = progress(Vector2(14, 620), Vector2(932, 8), Color("75aeff"))
 	level_text = overlay("", Vector2(14, 590), Vector2(270, 26), 15)
-	loadout = overlay("", Vector2(330, 595), Vector2(300, 22), 14)
+	loadout = overlay("", Vector2(330, 600), Vector2(300, 18), 14)
 	loadout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	compass = preload("res://scripts/survival/compass.gd").new()
 	compass.position = Vector2(740, 550)
@@ -368,7 +368,7 @@ func _process(delta):
 	var p = run.player
 	timer_label.text = "%02d:%02d" % [int(run.elapsed) / 60, int(run.elapsed) % 60]
 	hud.text = str(run.coins)
-	chest_cost_label.text = "Chest: %d" % run.chest_price()
+	chest_cost_label.text = "Chest cost %d" % run.chest_price()
 	chest_cost_label.visible = not compact_hud
 	var nearby_chest = run.nearest_chest(30)
 	chest_prompt.visible = nearby_chest != null and not modal_open
@@ -382,8 +382,8 @@ func _process(delta):
 	health_text.text = "%d / %d HP" % [p.hp, p.max_hp]
 	xp.max_value = p.max_xp
 	xp.value = p.current_xp
-	level_text.text = "Lv %d" % p.level if compact_hud else "Lv %d  /  %d kills" % [p.level, run.kills]
-	loadout.text = "Space" if p.dash_cooldown <= 0 else "Dash %.1fs" % p.dash_cooldown
+	level_text.text = "Lv %d" % p.level if compact_hud else "Lv %d  /  %d %s" % [p.level, run.kills, "kill" if run.kills == 1 else "kills"]
+	loadout.text = "Dash ready (Space)" if p.dash_cooldown <= 0 else "Dash %.1fs" % p.dash_cooldown
 	inventory_panel.visible = not modal_open
 	hud_refresh -= delta
 	if hud_refresh <= 0:
@@ -485,10 +485,14 @@ func show_choices():
 	var body = HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12)
 	box.add_child(body)
+	# Long item lists scroll instead of pushing the cards off screen.
+	var sidebar_scroll = ScrollContainer.new()
+	sidebar_scroll.custom_minimum_size = Vector2(194, 0)
+	sidebar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body.add_child(sidebar_scroll)
 	var sidebar = VBoxContainer.new()
-	sidebar.custom_minimum_size = Vector2(182, 0)
 	sidebar.add_theme_constant_override("separation", 6)
-	body.add_child(sidebar)
+	sidebar_scroll.add_child(sidebar)
 	inventory_contents(sidebar, true)
 	var first: Button
 	for i in range(run.offers.size()):
@@ -502,13 +506,13 @@ func show_choices():
 		card_frame.add_theme_stylebox_override("panel", paper_style("Popup01a", 12, [Color.WHITE, Color("c9efbf"), Color("e4c9ef")][rarity]))
 		body.add_child(card_frame)
 		var card = VBoxContainer.new()
-		card.add_theme_constant_override("separation", 8)
+		card.add_theme_constant_override("separation", 5)
 		card_frame.add_child(card)
 		var tier = label(Data.RARITIES[rarity], 14)
 		tier.add_theme_color_override("font_color", tint)
 		card.add_child(tier)
 		if not fallback:
-			card.add_child(build_icon(key, is_item, 52))
+			card.add_child(build_icon(key, is_item, 40))
 		var info = ["Field Rations" if key == "feast" else "Coin Pouch", "Heal 30 health." if key == "feast" else "Gain 15 coins."] if fallback else Data.ITEMS[key] if is_item else Data.UPGRADES[key]
 		var title = label(info[0], 21)
 		title.custom_minimum_size.y = 28
@@ -522,11 +526,11 @@ func show_choices():
 			sub = "NEW " + category
 		card.add_child(label("BONUS" if fallback else sub, 14))
 		var desc = label(info[1], 15)
-		desc.custom_minimum_size.y = 96
+		desc.custom_minimum_size.y = 78
 		card.add_child(desc)
 		var preview = label("Stacks up to 3 times." if is_item else "" if fallback else run.upgrade_preview(key), 15)
 		preview.add_theme_color_override("font_color", Color("356343"))
-		preview.custom_minimum_size.y = 58
+		preview.custom_minimum_size.y = 44
 		card.add_child(preview)
 		var pick = button("%d  /  TAKE" % [i + 1], run.choose_upgrade.bind(key))
 		paint_button(pick, LEAF)

@@ -230,13 +230,23 @@ func walkable_position(distance: float) -> Vector2:
 	var query = PhysicsShapeQueryParameters2D.new()
 	query.shape = shape
 	query.collision_mask = 1
+	# Clamping to the arena pulls points toward the player, so near walls an enemy
+	# could appear on screen. Prefer unclamped points; otherwise keep the farthest one.
+	var fallback = player.global_position + Vector2(0, 30)
+	var fallback_distance = -1.0
 	for attempt in range(32):
 		var pos = player.global_position + Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
 		pos = pos.clamp(arena_bounds.position + Vector2(16, 16), arena_bounds.end - Vector2(16, 16))
 		query.transform = Transform2D(0, pos)
-		if get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
+		if not get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
+			continue
+		var reach = player.global_position.distance_to(pos)
+		if reach >= distance - 1.0:
 			return pos
-	return player.global_position + Vector2(0, 30)
+		if reach > fallback_distance:
+			fallback = pos
+			fallback_distance = reach
+	return fallback
 
 func spawn_enemy(type: String, champion: bool = false):
 	if type != "boss" and enemies.size() >= MAX_ENEMIES: return null
@@ -685,10 +695,7 @@ func reroll():
 	if rerolls <= 0 or offer_kind == "item":
 		return
 	rerolls -= 1
-	if offer_kind == "item":
-		show_treasure()
-	else:
-		show_upgrades()
+	show_upgrades()
 
 func banish(key: String):
 	if offer_kind != "upgrade" or banishes <= 0 or not Data.UPGRADES.has(key) or not offers.has(key):
