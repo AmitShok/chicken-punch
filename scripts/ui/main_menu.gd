@@ -14,6 +14,7 @@ var shop_selected = ""
 var quest_selected = ""
 # Rebuilding a page recreates its list, so selections carry the scroll offset over.
 var list_scroll = 0
+var detail_page: VBoxContainer
 var upgrades_open = false
 var options_open = false
 
@@ -253,7 +254,14 @@ func build_shop(left: VBoxContainer, right: VBoxContainer):
 		status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(status)
 		list.add_child(row)
-	# Right page: the selected entry in detail.
+	detail_page = right
+	build_shop_detail(right)
+
+# Right page: the selected entry in detail. Rebuilt alone on selection so the
+# list on the left keeps its scroll position without a flicker.
+func build_shop_detail(right: VBoxContainer):
+	var character = shop_tab == 3
+	var item = shop_tab == 2
 	var key = shop_selected
 	var info = Data.CHARACTERS[key] if character else Data.ITEMS[key] if item else Data.UPGRADES[key]
 	var owned = save.unlocked.has(key) if character else Data.equipment_owned(save, key, item)
@@ -294,8 +302,7 @@ func build_shop(left: VBoxContainer, right: VBoxContainer):
 
 func select_shop_entry(key: String):
 	shop_selected = key
-	remember_scroll()
-	build_menu()
+	refresh_selection("Entry_", key, build_shop_detail)
 
 func build_options(left: VBoxContainer, right: VBoxContainer):
 	var tabs = TabContainer.new()
@@ -495,6 +502,10 @@ func build_quests(left: VBoxContainer, right: VBoxContainer):
 		row.add_theme_font_size_override("font_size", 16)
 		if done: row.add_theme_color_override("font_color", UI.LEAF)
 		list.add_child(row)
+	detail_page = right
+	build_quest_detail(right)
+
+func build_quest_detail(right: VBoxContainer):
 	var id = quest_selected
 	var done = Data.quest_done(save, id)
 	var title = UI.label(Data.QUESTS[id][0], 16)
@@ -534,8 +545,19 @@ func build_quests(left: VBoxContainer, right: VBoxContainer):
 
 func select_quest(id: String):
 	quest_selected = id
-	remember_scroll()
-	build_menu()
+	refresh_selection("Quest_", id, build_quest_detail)
+
+# Highlights the chosen row and redraws only the detail page.
+func refresh_selection(prefix: String, key: String, build_detail: Callable):
+	if not is_instance_valid(detail_page):
+		build_menu()
+		return
+	for row in menu.find_children(prefix + "*", "Button", true, false):
+		row.set_pressed_no_signal(row.name == prefix + key)
+	for child in detail_page.get_children():
+		detail_page.remove_child(child)
+		child.queue_free()
+	build_detail.call(detail_page)
 
 func remember_scroll():
 	var scroll = menu.find_child("ListScroll", true, false) if is_instance_valid(menu) else null
@@ -546,5 +568,9 @@ func restore_scroll(scroll: ScrollContainer):
 	var offset = list_scroll
 	list_scroll = 0
 	if offset == 0: return
+	# Hide the list for the one frame it would sit at the top.
+	scroll.modulate.a = 0.0
 	await get_tree().process_frame
-	if is_instance_valid(scroll): scroll.scroll_vertical = offset
+	if is_instance_valid(scroll):
+		scroll.scroll_vertical = offset
+		scroll.modulate.a = 1.0
