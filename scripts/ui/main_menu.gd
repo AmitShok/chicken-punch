@@ -12,6 +12,8 @@ var page = "home"
 var shop_tab = 0
 var shop_selected = ""
 var quest_selected = ""
+# Rebuilding a page recreates its list, so selections carry the scroll offset over.
+var list_scroll = 0
 var upgrades_open = false
 var options_open = false
 
@@ -224,6 +226,8 @@ func build_shop(left: VBoxContainer, right: VBoxContainer):
 		build_menu())
 	left.add_child(tabs)
 	var scroll = ScrollContainer.new()
+	scroll.name = "ListScroll"
+	restore_scroll.call_deferred(scroll)
 	scroll.custom_minimum_size.y = 330
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(scroll)
@@ -290,6 +294,7 @@ func build_shop(left: VBoxContainer, right: VBoxContainer):
 
 func select_shop_entry(key: String):
 	shop_selected = key
+	remember_scroll()
 	build_menu()
 
 func build_options(left: VBoxContainer, right: VBoxContainer):
@@ -311,6 +316,7 @@ func build_options(left: VBoxContainer, right: VBoxContainer):
 	rows[0].grab_focus()
 
 func buy_shop(key: String, character: bool, item: bool):
+	remember_scroll()
 	if character:
 		preview = key
 		unlock_character()
@@ -471,6 +477,8 @@ func show_quests():
 func build_quests(left: VBoxContainer, right: VBoxContainer):
 	left.add_child(page_heading("%d / %d QUESTS COMPLETE" % [Data.quests_completed(save), Data.QUESTS.size()]))
 	var scroll = ScrollContainer.new()
+	scroll.name = "ListScroll"
+	restore_scroll.call_deferred(scroll)
 	scroll.custom_minimum_size.y = 344
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(scroll)
@@ -513,7 +521,9 @@ func build_quests(left: VBoxContainer, right: VBoxContainer):
 			row.add_child(reward)
 			rewards.add_child(chip)
 	if not found:
-		rewards.add_child(UI.label("Counts toward build tools.", 16))
+		var note = UI.label("No gear; counts toward build tools.", 16)
+		note.autowrap_mode = TextServer.AUTOWRAP_OFF
+		rewards.add_child(note)
 	var push = Control.new()
 	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(push)
@@ -524,4 +534,17 @@ func build_quests(left: VBoxContainer, right: VBoxContainer):
 
 func select_quest(id: String):
 	quest_selected = id
+	remember_scroll()
 	build_menu()
+
+func remember_scroll():
+	var scroll = menu.find_child("ListScroll", true, false) if is_instance_valid(menu) else null
+	list_scroll = scroll.scroll_vertical if scroll else 0
+
+# The new list has no height until containers lay it out, so restore a frame later.
+func restore_scroll(scroll: ScrollContainer):
+	var offset = list_scroll
+	list_scroll = 0
+	if offset == 0: return
+	await get_tree().process_frame
+	if is_instance_valid(scroll): scroll.scroll_vertical = offset
