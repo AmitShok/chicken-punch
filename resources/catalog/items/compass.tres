@@ -9,3 +9,5 @@ key = "compass"
 display_name = "Field Notes"
 description = "+12% experience per stack."
 icon = ExtResource("1_dw4wx")
+unlock_quest = "level_20"
+unlock_gold = 30

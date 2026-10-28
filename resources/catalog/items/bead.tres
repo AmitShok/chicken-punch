@@ -10,3 +10,4 @@ display_name = "Iron Bead"
 description = "+1 armor per stack."
 icon = ExtResource("1_uvpsi")
 starter = true
+unlock_gold = 0

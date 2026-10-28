@@ -16,5 +16,5 @@ extends Resource
 ## Whether the sheet's art faces left.
 @export var faces_left := false
 @export var unlock_gold := 0
-## Best survival time (seconds) needed before it can be bought.
-@export var unlock_seconds := 0
+## Quest id from Data.QUESTS that must be complete before it can be bought.
+@export var unlock_quest := ""

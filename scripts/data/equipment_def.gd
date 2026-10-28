@@ -20,8 +20,8 @@ enum Kind { WEAPON, TOME }
 @export_group("Unlock")
 ## Available from the first run without buying it.
 @export var starter := false
-## Best survival time (seconds) needed before it can be bought.
-@export var unlock_seconds := 60
+## Quest id from Data.QUESTS that must be complete before it can be bought.
+@export var unlock_quest := ""
 @export var unlock_gold := 35
 
 @export_group("Evolution")

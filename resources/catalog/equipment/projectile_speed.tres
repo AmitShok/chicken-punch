@@ -11,3 +11,5 @@ display_name = "Tailwind"
 description = "+20% projectile travel speed and orbit rotation speed per rank."
 art = ExtResource("1_cv5xs")
 icon = ExtResource("2_sca1y")
+unlock_quest = "chests_10"
+unlock_gold = 40

@@ -12,4 +12,4 @@ starting_weapon = "shell"
 sprite_sheet = ExtResource("2_fdc14")
 faces_left = true
 unlock_gold = 90
-unlock_seconds = 180
+unlock_quest = "guardian_1"

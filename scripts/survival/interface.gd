@@ -882,6 +882,10 @@ func show_result(won: bool):
 	var box = panel("DAWN BELONGS TO YOU" if won else "THE FLOCK REMEMBERS", "Gold saved to your Coop  /  Unspent coins expire")
 	mode = "result"
 	box.add_child(label("%02d:%02d survived     LEVEL %d     %d KILLS     +%d GOLD" % [int(run.elapsed) / 60, int(run.elapsed) % 60, run.player.level, run.kills, run.gold_earned], 22))
+	if not run.new_quests.is_empty():
+		var quests = label("QUESTS COMPLETE  /  " + "  /  ".join(run.new_quests.map(func(id): return Data.QUESTS[id][0])) + "\nNew gear is ready to buy in the Coop Shop.", 16)
+		quests.add_theme_color_override("font_color", LEAF)
+		box.add_child(quests)
 	var tabs = TabContainer.new()
 	tabs.custom_minimum_size = Vector2(890, 285)
 	box.add_child(tabs)

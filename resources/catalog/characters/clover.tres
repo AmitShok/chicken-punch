@@ -13,4 +13,4 @@ sprite_sheet = ExtResource("2_dhox7")
 cell = Vector2i(24, 16)
 faces_left = true
 unlock_gold = 120
-unlock_seconds = 300
+unlock_quest = "win"

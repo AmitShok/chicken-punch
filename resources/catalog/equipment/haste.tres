@@ -8,7 +8,8 @@
 script = ExtResource("3_krqgg")
 key = "haste"
 display_name = "Quick Hatch"
-description = "RELOAD SPEED: 10% shorter attack cooldown per rank. Evolves Egg Barrage."
+description = "RELOAD SPEED: 5% shorter attack cooldowns per rank, compounding. Evolves Egg Barrage."
 art = ExtResource("1_3r6gf")
 icon = ExtResource("2_j6dcb")
-starter = true
+unlock_quest = "max_rank"
+unlock_gold = 100

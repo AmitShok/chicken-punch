@@ -13,6 +13,8 @@ const MAX_IMPACT_EFFECTS = 48
 const MAX_ENEMIES = 180
 const MUSIC_VOLUME = -17.0
 const MUSIC_SILENT = -40.0
+const MIGHT_PER_RANK = 0.1
+const HASTE_PER_RANK = 0.95
 var music_key = ""
 var music_clock = 0.0
 var combat_grid: Dictionary = {}
@@ -41,7 +43,12 @@ var sound_clocks: Dictionary = {}
 var offer_kind = "upgrade"
 var offer_rarities: Dictionary = {}
 var damage_totals: Dictionary = {}
-var skips = 2
+var skips = 0
+# Run stats that feed lifetime quests.
+var chests_opened = 0
+var dashes = 0
+var low_hp_time = 0.0
+var new_quests: Array = []
 var player: Node
 var ui: CanvasLayer
 var elapsed = 0.0
@@ -72,8 +79,8 @@ var hazards: Array = []
 var fire_trail_started = false
 var fire_last_position = Vector2.ZERO
 var fire_trail_progress = 0.0
-var rerolls = 3
-var banishes = 2
+var rerolls = 0
+var banishes = 0
 var banned: Array = []
 var offers: Array = []
 var save: Dictionary
@@ -95,6 +102,10 @@ func _ready():
 	projectile_reserve.hide()
 	add_child(projectile_reserve)
 	save = Data.read_save()
+	# Build tools are earned by completing quests.
+	rerolls = Data.tool_uses(save, "reroll")
+	banishes = Data.tool_uses(save, "banish")
+	skips = Data.tool_uses(save, "skip")
 	feedback = preload("res://scripts/survival/feedback.gd").new()
 	feedback.run = self
 	add_child(feedback)
@@ -179,6 +190,7 @@ func _physics_process(delta):
 	target_scan_clock -= delta
 	elapsed += delta
 	spawn_clock -= delta
+	if player.hp < player.max_hp * 0.5: low_hp_time += delta
 	if spawn_clock <= 0 and not final_boss_dead:
 		var minute = int(elapsed / 60)
 		spawn_clock = maxf(0.12, 0.85 - minute * 0.075) / Data.LEVELS[level_id].pressure
@@ -239,7 +251,7 @@ func walkable_position(distance: float) -> Vector2:
 		var pos = player.global_position + Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
 		pos = pos.clamp(arena_bounds.position + Vector2(16, 16), arena_bounds.end - Vector2(16, 16))
 		query.transform = Transform2D(0, pos)
-		if not get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
+		if not get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty() or on_water(pos):
 			continue
 		var reach = player.global_position.distance_to(pos)
 		if reach >= distance - 1.0:
@@ -248,6 +260,20 @@ func walkable_position(distance: float) -> Vector2:
 			fallback = pos
 			fallback_distance = reach
 	return fallback
+
+# The pond has no collision, so physics alone lets chests land in it.
+func on_water(pos: Vector2) -> bool:
+	var ground = get_node_or_null("Ground layer")
+	if ground == null: return false
+	var layers: Array = [ground]
+	layers.append_array(ground.get_children().filter(func(c): return c is TileMapLayer))
+	for layer in layers:
+		var source_id = layer.get_cell_source_id(layer.local_to_map(layer.to_local(pos)))
+		if source_id == -1: continue
+		var source = layer.tile_set.get_source(source_id)
+		if source is TileSetAtlasSource and source.texture and source.texture.resource_path.contains("TilesetWater"):
+			return true
+	return false
 
 func spawn_enemy(type: String, champion: bool = false):
 	if type != "boss" and enemies.size() >= MAX_ENEMIES: return null
@@ -260,7 +286,7 @@ func spawn_enemy(type: String, champion: bool = false):
 	return enemy
 
 func power() -> float:
-	return 1.0 + ranks.get("might", 0) * 0.2 + Data.training(save).power * 0.05 + (items.get("berserk", 0) * 0.25 if player.hp < player.max_hp * 0.5 else 0.0)
+	return 1.0 + ranks.get("might", 0) * MIGHT_PER_RANK + Data.training(save).power * 0.05 + (items.get("berserk", 0) * 0.25 if player.hp < player.max_hp * 0.5 else 0.0)
 
 func area_multiplier() -> float:
 	return 1.0 + ranks.get("area", 0) * 0.18
@@ -281,7 +307,7 @@ func nearest_enemy():
 
 func attack_weapons():
 	var target = nearest_enemy()
-	var haste = pow(0.9, ranks.get("haste", 0))
+	var haste = haste_multiplier()
 	for key in ["egg", "shuriken"]:
 		var rank = ranks.get(key, 0)
 		if rank == 0 or cooldowns[key] > 0 or target == null:
@@ -289,7 +315,7 @@ func attack_weapons():
 		play_sound(key)
 		var dir = player.global_position.direction_to(target.global_position)
 		cooldowns[key] = (0.85 if key == "egg" else 1.6) * haste * ascension_cooldown(key)
-		var count = (rank if key == "egg" else rank + 2) + projectile_bonus()
+		var count = (1 + int(rank / 2) if key == "egg" else rank + 2) + projectile_bonus()
 		if evolved.has(key):
 			count += 3
 		if key == "egg" and ascension == "henpocalypse":
@@ -304,7 +330,7 @@ func attack_weapons():
 	update_fire_trail()
 
 func fire_spacing() -> float:
-	return 65.0 * pow(0.9, ranks.get("haste", 0)) * ascension_cooldown("fire") / (1 + projectile_bonus())
+	return 65.0 * haste_multiplier() * ascension_cooldown("fire") / (1 + projectile_bonus())
 
 func update_fire_trail():
 	if ranks.get("fire", 0) <= 0:
@@ -436,7 +462,7 @@ func update_orbits(delta):
 		# Both guard sprites point up; rotate their blade into the clockwise tangent.
 		orbit_sprites[i].rotation = angle + PI
 	if rank > 0 and cooldowns.orbit <= 0:
-		cooldowns.orbit = 0.22 * pow(0.9, ranks.get("haste", 0))
+		cooldowns.orbit = 0.22 * haste_multiplier()
 		for sprite in orbit_sprites:
 			blast(sprite.position, 15 * area_multiplier() * weapon_size_multiplier(), (5 + rank * 3) * power(), false, "orbit")
 
@@ -720,12 +746,19 @@ func finish(won: bool):
 	ended = true
 	play_sound("evolution" if won else "defeat")
 	play_music("victory" if won else "defeat")
-	gold_earned = roundi((int(elapsed / 15) + (50 if won else 0)) * reward_multiplier)
+	# Gold rewards time, kills and guardians, so short early runs still fund unlocks.
+	gold_earned = roundi((int(elapsed / 15) + int(kills / 40) + guardians_defeated * 10 + (50 if won else 0)) * reward_multiplier)
 	save.gold += gold_earned
-	save.best = maxi(save.best, int(elapsed))
 	if won:
 		save.wins += 1
 		save.level_clears[level_id] = maxi(save.level_clears.get(level_id, 0), difficulty_tier + 1)
+	var weapon_ranks = ranks.keys().filter(func(k): return k in Data.WEAPONS).map(func(k): return ranks[k])
+	new_quests = Data.record_run(save, {
+		"best_time": int(elapsed), "best_level": player.level, "best_guardians": guardians_defeated,
+		"best_rank": weapon_ranks.max() if not weapon_ranks.is_empty() else 0, "best_crit": ranks.get("crit", 0),
+		"best_dashes": dashes, "best_low_hp": int(low_hp_time), "best_tier_won": difficulty_tier + 1 if won else 0,
+		"kills": kills, "chests": chests_opened, "guardians": guardians_defeated, "evolutions": evolved.size(),
+		"evolved_fire": 1 if evolved.has("fire") else 0, "wins": 1 if won else 0, "runs": 1})
 	Data.write_save(save)
 	ui.show_result(won)
 	get_tree().paused = true
@@ -886,9 +919,9 @@ func base_upgrade_preview(key: String) -> String:
 	var after = offered_rank(key)
 	match key:
 		"projectile_speed": return "Speed  +%d%% > +%d%%" % [before * 20, after * 20]
-		"projectile_count": return "Extra projectiles  +%d > +%d\nGain +%d this pick" % [before, after, after - before]
+		"projectile_count": return "Extra projectiles  +%d > +%d\nOne per two ranks" % [before / 2, after / 2]
 		"projectile_size": return "Size  +%d%% > +%d%%" % [before * 20, after * 20]
-		"egg": return "Eggs  %d > %d\nDamage  %d > %d" % [before, after, 10 + before * 4, 10 + after * 4]
+		"egg": return "Eggs  %d > %d\nDamage  %d > %d" % [0 if before == 0 else 1 + before / 2, 1 + after / 2, 10 + before * 4, 10 + after * 4]
 		"shuriken": return "Blades  %d > %d\nPierce  %d > %d" % [0 if before == 0 else before + 2, after + 2, before + 2, after + 2]
 		"thunder": return "Targets  %d > %d\nDamage  %d > %d" % [storm_target_count(before), storm_target_count(after), 14 + before * 6, 14 + after * 6]
 		"frost": return "Pierce  %d > %d\nDamage  %d > %d" % [before + 2, after + 2, 9 + before * 4, 9 + after * 4]
@@ -896,8 +929,8 @@ func base_upgrade_preview(key: String) -> String:
 		"shell": return "Damage  %d > %d\nBlast radius  %d > %d" % [22 + before * 9, 22 + after * 9, 26 + before * 3, 26 + after * 3]
 		"fire": return "Damage / tick  %d > %d\nDuration  %.1fs > %.1fs" % [4 + before * 3, 4 + after * 3, 2 + before * 0.5, 2 + after * 0.5]
 		"orbit": return "Blades  %d > %d\nDamage  %d > %d" % [0 if before == 0 else 1 + before / 2, 1 + after / 2, 5 + before * 3, 5 + after * 3]
-		"might": return "Damage bonus  +%d%% > +%d%%" % [before * 20, after * 20]
-		"haste": return "Cooldown  %d%% > %d%%" % [roundi(pow(0.9, before) * 100), roundi(pow(0.9, after) * 100)]
+		"might": return "Damage bonus  +%d%% > +%d%%" % [before * 10, after * 10]
+		"haste": return "Cooldown  %d%% > %d%%" % [roundi(pow(HASTE_PER_RANK, before) * 100), roundi(pow(HASTE_PER_RANK, after) * 100)]
 		"area": return "Area bonus  +%d%% > +%d%%" % [before * 18, after * 18]
 		"speed": return "Speed bonus  +%d%% > +%d%%" % [before * 8, after * 8]
 		"armor": return "Armor  +%d > +%d" % [before, after]
@@ -936,6 +969,7 @@ func complete_sickle_return(hits: int):
 		floating_text(player.global_position, "+%d" % healing, Color("8fe0bc"))
 
 func on_dash():
+	dashes += 1
 	play_sound("dash")
 	if synergy_active("wake"):
 		blast(player.global_position, 45 * area_multiplier(), 12 * items.get("bead", 0) * power(), true, "wake")
@@ -1021,8 +1055,12 @@ func ascension_progress(key: String) -> String:
 	lines.append("ACTIVE for this run" if ascension == key else "Another Ascension already claimed" if ascension != "" else "READY: collect a chest" if ascension_ready(key) else "Complete the recipe, then collect a chest")
 	return "\n".join(lines)
 
+func haste_multiplier() -> float:
+	return pow(HASTE_PER_RANK, ranks.get("haste", 0))
+
 func projectile_bonus() -> int:
-	return clampi(ranks.get("projectile_count", 0), 0, Data.MAX_RANK)
+	# One extra projectile per two ranks: a strong tome, not a free doubling.
+	return clampi(ranks.get("projectile_count", 0), 0, Data.MAX_RANK) / 2
 
 func projectile_speed_multiplier() -> float:
 	return 1.0 + ranks.get("projectile_speed", 0) * 0.2
@@ -1067,6 +1105,7 @@ func try_open_chest(chest = null) -> bool:
 	coins -= last_chest_paid
 	if last_chest_paid > 0:
 		paid_chests += 1
+	chests_opened += 1
 	chest.opened = true
 	chest.remove_from_group("run_pickups")
 	chest.get_node("Sprite").frame = 1

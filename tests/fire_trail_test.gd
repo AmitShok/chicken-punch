@@ -10,7 +10,7 @@ func reset_trail(run, bonus: int):
 	for h in run.hazards: h.sprite.queue_free()
 	run.hazards.clear()
 	run.fire_trail_started = false
-	run.ranks = {"fire":1,"projectile_count":bonus}
+	run.ranks = {"fire":1,"projectile_count":bonus * 2}
 	run.player.position = Vector2.ZERO
 	run.update_fire_trail()
 func test():
@@ -45,7 +45,7 @@ func test():
 	check(run.hazards[1].sprite.position.is_equal_approx(Vector2(10,6.25)), "Trail follows corners instead of cutting diagonally")
 	run.ranks.haste = 5
 	run.ascension = "henpocalypse"
-	check(is_equal_approx(run.fire_spacing(),65*pow(0.9,5)*0.5/4), "Reload speed and Henpocalypse still improve density")
+	check(is_equal_approx(run.fire_spacing(),65*pow(0.95,5)*0.5/4), "Reload speed and Henpocalypse still improve density")
 	run.cooldowns.fire = 0
 	var count = run.hazards.size()
 	run.update_fire_trail()

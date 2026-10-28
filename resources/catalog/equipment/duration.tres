@@ -11,3 +11,5 @@ display_name = "Long Summer"
 description = "Extends the duration of effects such as lingering fire and icy slows by 20% per rank."
 art = ExtResource("1_3w0ey")
 icon = ExtResource("2_wvjgl")
+unlock_quest = "level_20"
+unlock_gold = 50

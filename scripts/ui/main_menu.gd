@@ -11,6 +11,7 @@ var preview = "nugget"
 var page = "home"
 var shop_tab = 0
 var shop_selected = ""
+var quest_selected = ""
 var upgrades_open = false
 var options_open = false
 
@@ -36,6 +37,7 @@ func _ready():
 const PAGES = {
 	"home": ["COOP", "IconHome01a", "CHICKENPUNCH"],
 	"setup": ["RUN", "IconPlay01a", "SURVIVE THE NIGHT"],
+	"quests": ["QUESTS", "IconTick01a", "COOP QUESTS"],
 	"shop": ["SHOP", "IconCoin01a", "COOP SHOP"],
 	"training": ["TRAINING", "IconStar01a", "COOP UPGRADES"],
 	"options": ["OPTIONS", "IconGear01a", "OPTIONS"]
@@ -85,11 +87,12 @@ func build_menu():
 	var frame = PanelContainer.new()
 	frame.custom_minimum_size = Vector2(880, 486)
 	stack.add_child(frame)
-	var pages = UI.book_spread(frame, {"home": 330, "setup": 300, "shop": 400, "training": 300, "options": 250}[page])
+	var pages = UI.book_spread(frame, {"home": 330, "setup": 300, "quests": 420, "shop": 400, "training": 300, "options": 250}[page])
 	match page:
 		"home": build_home(pages[0], pages[1])
 		"setup": build_setup(pages[0], pages[1])
 		"shop": build_shop(pages[0], pages[1])
+		"quests": build_quests(pages[0], pages[1])
 		"training": build_training_menu(pages[0], pages[1])
 		"options": build_options(pages[0], pages[1])
 	var footer = Control.new()
@@ -102,6 +105,7 @@ func open_page(key: String):
 		"home": show_roster()
 		"setup": show_setup()
 		"shop": show_shop()
+		"quests": show_quests()
 		"training": show_training()
 		"options": _on_option_button_pressed()
 
@@ -249,7 +253,8 @@ func build_shop(left: VBoxContainer, right: VBoxContainer):
 	var key = shop_selected
 	var info = Data.CHARACTERS[key] if character else Data.ITEMS[key] if item else Data.UPGRADES[key]
 	var owned = save.unlocked.has(key) if character else Data.equipment_owned(save, key, item)
-	var requirement = Data.CHARACTER_MILESTONES[key] if character else Data.unlock_requirement(key, item)
+	var quest = Data.CHARACTER_QUESTS[key] if character else Data.unlock_quest(key, item)
+	var quest_ready = Data.quest_done(save, quest)
 	var cost = Data.CHARACTER_COSTS[key] if character else Data.unlock_cost(key, item)
 	var heading = HBoxContainer.new()
 	heading.add_theme_constant_override("separation", 12)
@@ -268,12 +273,17 @@ func build_shop(left: VBoxContainer, right: VBoxContainer):
 	var push = Control.new()
 	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(push)
-	right.add_child(UI.label("Requires a best survival of %d:%02d  (yours: %d:%02d)" % [requirement / 60, requirement % 60, save.best / 60, save.best % 60], 16))
+	if quest == "" and not owned:
+		right.add_child(UI.label("Starter gear.", 16))
+	elif quest != "":
+		var line = UI.label(("QUEST DONE  /  " if quest_ready else "QUEST  /  ") + Data.QUESTS[quest][0] + ("" if quest_ready else "  (" + Data.quest_progress(save, quest) + ")"), 16)
+		line.add_theme_color_override("font_color", UI.LEAF if quest_ready else UI.INK)
+		right.add_child(line)
 	right.add_child(page_heading("Purchased gear can appear in future runs. It is not an immediate upgrade."))
-	var text = "OWNED" if owned else "SURVIVE %d:%02d FIRST" % [requirement / 60, requirement % 60] if save.best < requirement else "UNLOCK  /  %d GOLD" % cost
+	var text = "OWNED" if owned else "COMPLETE THE QUEST FIRST" if not quest_ready else "UNLOCK  /  %d GOLD" % cost
 	var buy = UI.button(text, buy_shop.bind(key, character, item))
 	buy.name = "Unlock_" + key
-	buy.disabled = owned or save.best < requirement or save.gold < cost
+	buy.disabled = owned or not quest_ready or save.gold < cost
 	buy.custom_minimum_size.y = 48
 	UI.paint_button(buy, UI.LEAF)
 	right.add_child(buy)
@@ -420,7 +430,7 @@ func select_character(key: String):
 		selected_button.grab_focus()
 
 func unlock_character():
-	if save.unlocked.has(preview) or save.best < Data.CHARACTER_MILESTONES[preview] or save.gold < Data.CHARACTER_COSTS[preview]: return
+	if save.unlocked.has(preview) or not Data.quest_done(save, Data.CHARACTER_QUESTS[preview]) or save.gold < Data.CHARACTER_COSTS[preview]: return
 	save.gold -= Data.CHARACTER_COSTS[preview]
 	save.unlocked.append(preview)
 	save.character = preview
@@ -451,3 +461,67 @@ func apply_options_audio():
 
 func _on_exist_button_pressed():
 	get_tree().quit()
+
+func show_quests():
+	page = "quests"
+	build_menu()
+
+# Quests list on the left; the selected quest's rewards and the build-tool
+# ladder on the right.
+func build_quests(left: VBoxContainer, right: VBoxContainer):
+	left.add_child(page_heading("%d / %d QUESTS COMPLETE" % [Data.quests_completed(save), Data.QUESTS.size()]))
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size.y = 344
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left.add_child(scroll)
+	var list = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	if not Data.QUESTS.has(quest_selected):
+		var open = Data.QUESTS.keys().filter(func(id): return not Data.quest_done(save, id))
+		quest_selected = open[0] if not open.is_empty() else Data.QUESTS.keys()[0]
+	for id in Data.QUESTS:
+		var done = Data.quest_done(save, id)
+		var row = list_row(Data.QUESTS[id][0], Book.art("IconTick01a") if done else null, select_quest.bind(id), id == quest_selected)
+		row.name = "Quest_" + id
+		row.add_theme_font_size_override("font_size", 16)
+		if done: row.add_theme_color_override("font_color", UI.LEAF)
+		list.add_child(row)
+	var id = quest_selected
+	var done = Data.quest_done(save, id)
+	var title = UI.label(Data.QUESTS[id][0], 16)
+	right.add_child(page_heading("QUEST COMPLETE" if done else "IN PROGRESS  /  " + Data.quest_progress(save, id)))
+	right.add_child(title)
+	right.add_child(page_heading("UNLOCKS IN THE SHOP"))
+	var rewards = HFlowContainer.new()
+	rewards.add_theme_constant_override("h_separation", 6)
+	rewards.add_theme_constant_override("v_separation", 6)
+	right.add_child(rewards)
+	var found = false
+	for group in [[Data.CATALOG.equipment, false, false], [Data.CATALOG.items, true, false], [Data.CATALOG.characters, false, true]]:
+		for def in group[0]:
+			if def.unlock_quest != id: continue
+			found = true
+			var chip = PanelContainer.new()
+			chip.add_theme_stylebox_override("panel", UI.paper_style("Popup01a", 6))
+			var row = HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			chip.add_child(row)
+			row.add_child(UI.portrait(def.key, 24) if group[2] else UI.icon(def.key, group[1], 24))
+			var reward = UI.label("%s  %d g" % [def.display_name, def.unlock_gold], 16)
+			reward.autowrap_mode = TextServer.AUTOWRAP_OFF
+			row.add_child(reward)
+			rewards.add_child(chip)
+	if not found:
+		rewards.add_child(UI.label("Counts toward build tools.", 16))
+	var push = Control.new()
+	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(push)
+	right.add_child(page_heading("BUILD TOOLS PER RUN"))
+	right.add_child(UI.label("Reroll %d    Skip %d    Banish %d" % [Data.tool_uses(save, "reroll"), Data.tool_uses(save, "skip"), Data.tool_uses(save, "banish")], 16))
+	var next = Data.MILESTONES.filter(func(m): return Data.quests_completed(save) < m[0])
+	right.add_child(UI.label("Next: +1 %s at %d quests." % [next[0][1].capitalize(), next[0][0]] if not next.is_empty() else "Every build tool earned.", 16))
+
+func select_quest(id: String):
+	quest_selected = id
+	build_menu()

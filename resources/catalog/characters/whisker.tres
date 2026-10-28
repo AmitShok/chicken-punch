@@ -11,4 +11,4 @@ flavor = "The barn's night watch. Catch enemies on the sickle's return."
 starting_weapon = "sickle"
 sprite_sheet = ExtResource("2_c2qsl")
 unlock_gold = 60
-unlock_seconds = 120
+unlock_quest = "kills_1000"

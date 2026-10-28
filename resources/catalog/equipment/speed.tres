@@ -12,3 +12,4 @@ description = "+8% movement speed. Shuriken rank 10 + this tome + chest evolves 
 art = ExtResource("1_15jhf")
 icon = ExtResource("2_pp8y4")
 starter = true
+unlock_gold = 0

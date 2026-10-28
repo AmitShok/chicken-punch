@@ -10,5 +10,5 @@ display_name = "Giant Slayer"
 description = "+20% damage to elites and guardians per stack."
 rarity = 2
 icon = ExtResource("1_f4iaw")
-unlock_seconds = 240
-unlock_gold = 60
+unlock_quest = "guardians_6"
+unlock_gold = 150

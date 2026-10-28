@@ -10,5 +10,5 @@ display_name = "Red Feather"
 description = "+25% damage per stack while below half health."
 rarity = 1
 icon = ExtResource("1_7k6r0")
-unlock_seconds = 120
-unlock_gold = 40
+unlock_quest = "low_hp_60"
+unlock_gold = 90

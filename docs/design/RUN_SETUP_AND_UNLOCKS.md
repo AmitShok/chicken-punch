@@ -1,5 +1,7 @@
 # Run setup and permanent equipment access
 
+> Superseded on October 28, 2026: unlocks now use quests. See PROGRESSION_REBALANCE.md.
+
 Implemented October 23, 2026.
 
 ## Research and adaptation

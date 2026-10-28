@@ -11,3 +11,5 @@ display_name = "Second Wind"
 description = "Recover 0.4 health per second."
 art = ExtResource("1_c6soj")
 icon = ExtResource("2_pusbk")
+starter = true
+unlock_gold = 0

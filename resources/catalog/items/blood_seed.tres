@@ -10,5 +10,5 @@ display_name = "Crimson Seed"
 description = "Every 15 kills, heal 3 health per stack."
 rarity = 1
 icon = ExtResource("1_p81qr")
-unlock_seconds = 120
-unlock_gold = 40
+unlock_quest = "kills_5000"
+unlock_gold = 80

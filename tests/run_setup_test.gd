@@ -35,6 +35,7 @@ func test():
 	menu.show_shop()
 	check(not Data.purchase_access(menu.save,"thunder"), "Quest requirement blocks early purchase")
 	menu.save.best = 360
+	menu.save.stats.best_rank = 10
 	menu.build_menu()
 	await snap("new-shop")
 	for tab in [1,2,3]:
@@ -46,8 +47,8 @@ func test():
 	menu._on_option_button_pressed()
 	await snap("new-options")
 	check(Data.purchase_access(menu.save,"thunder"), "Eligible equipment purchase succeeds")
-	check(menu.save.gold == 440, "Shop charges permanent gold")
-	check(not Data.purchase_access(menu.save,"thunder") and menu.save.gold == 440, "Duplicate purchase never charges twice")
+	check(menu.save.gold == 380, "Shop charges permanent gold")
+	check(not Data.purchase_access(menu.save,"thunder") and menu.save.gold == 380, "Duplicate purchase never charges twice")
 	check(Data.equipment_owned(Data.read_save(),"thunder"), "Equipment access persists after reload")
 	menu.save.gold = 0
 	check(not Data.purchase_access(menu.save,"frost"), "Insufficient gold blocks purchase")

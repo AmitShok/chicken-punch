@@ -11,3 +11,5 @@ display_name = "Giant Hatch"
 description = "+20% weapon size and hit radius per rank. Also enlarges explosions, fire and lightning reach."
 art = ExtResource("1_rleho")
 icon = ExtResource("2_qd4db")
+unlock_quest = "evolve"
+unlock_gold = 100

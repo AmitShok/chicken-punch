@@ -9,3 +9,5 @@ key = "magnet_stone"
 display_name = "Lodestone"
 description = "+25 pickup radius per stack."
 icon = ExtResource("1_olccd")
+unlock_quest = "kills_2500"
+unlock_gold = 30

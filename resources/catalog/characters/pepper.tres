@@ -11,4 +11,4 @@ flavor = "A hot-tempered hen. Leave burning trails for the horde."
 starting_weapon = "fire"
 sprite_sheet = ExtResource("2_dnxxf")
 unlock_gold = 40
-unlock_seconds = 60
+unlock_quest = "survive_3"

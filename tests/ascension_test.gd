@@ -77,8 +77,8 @@ func test():
 			check(projectiles.get("frost",0) == 14, "Absolute Zero launches fourteen ice shards")
 			check(is_equal_approx(run.arsenal.clocks.thunder,1.0), "Absolute Zero halves lightning cooldown")
 		elif key == "henpocalypse":
-			check(projectiles.get("egg",0) == 21, "Henpocalypse launches twenty-one eggs")
-			check(is_equal_approx(run.cooldowns.egg,0.85*pow(0.9,10)*0.5), "Henpocalypse stacks with Quick Hatch")
+			check(projectiles.get("egg",0) == 17, "Henpocalypse launches seventeen eggs")
+			check(is_equal_approx(run.cooldowns.egg,0.85*pow(0.95,10)*0.5), "Henpocalypse stacks with Quick Hatch")
 		else:
 			check(projectiles.get("sickle",0) == 4, "Last Harvest launches four sickles")
 			check(run.orbit_sprites.size() == 16, "Last Harvest creates sixteen orbiting blades")

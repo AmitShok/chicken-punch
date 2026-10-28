@@ -9,3 +9,4 @@ key = "key"
 display_name = "Coop Key"
 description = "Chance to open paid chests for free without raising prices: stacks / (stacks + 10)."
 icon = ExtResource("1_7053m")
+unlock_quest = "chests_10"

@@ -27,7 +27,7 @@ static var CHARACTERS: Dictionary = build_characters()
 # Explicit sheet geometry and facing; animal sheets do not share one layout.
 static var CHARACTER_VISUALS: Dictionary = build_character_visuals()
 static var CHARACTER_COSTS: Dictionary = build_character_field("unlock_gold")
-static var CHARACTER_MILESTONES: Dictionary = build_character_field("unlock_seconds")
+static var CHARACTER_QUESTS: Dictionary = build_character_field("unlock_quest")
 
 static func equipment_def(key: String) -> Resource:
 	for def in CATALOG.equipment:
@@ -153,15 +153,83 @@ static func equipment_owned(data: Dictionary, key: String, item: bool = false) -
 		if CHARACTERS.has(character) and CHARACTERS[character][1] == key: return true
 	return false
 
-static func unlock_requirement(key: String, item: bool = false) -> int:
-	return item_def(key).unlock_seconds if item else equipment_def(key).unlock_seconds
+# Quests gate everything that is not a starter, as in Megabonk: finish the
+# task, then buy access with gold. id -> [text, stat, target]. Progress is read
+# from lifetime stats in the save, so quests can never fall out of sync.
+const QUESTS = {
+	"survive_3": ["Survive 3:00 in one run", "best_time", 180],
+	"survive_5": ["Survive 5:00 in one run", "best_time", 300],
+	"level_15": ["Reach level 15 in one run", "best_level", 15],
+	"level_20": ["Reach level 20 in one run", "best_level", 20],
+	"level_25": ["Reach level 25 in one run", "best_level", 25],
+	"kills_500": ["Defeat 500 enemies in total", "kills", 500],
+	"kills_1000": ["Defeat 1,000 enemies in total", "kills", 1000],
+	"kills_2500": ["Defeat 2,500 enemies in total", "kills", 2500],
+	"kills_5000": ["Defeat 5,000 enemies in total", "kills", 5000],
+	"chests_10": ["Open 10 chests in total", "chests", 10],
+	"max_rank": ["Raise any weapon to rank 10 in one run", "best_rank", 10],
+	"guardian_1": ["Defeat a guardian", "best_guardians", 1],
+	"guardian_2": ["Defeat two guardians in one run", "best_guardians", 2],
+	"guardians_6": ["Defeat 6 guardians in total", "guardians", 6],
+	"evolve": ["Evolve a weapon", "evolutions", 1],
+	"evolve_fire": ["Evolve Hot Foot into Phoenix Trail", "evolved_fire", 1],
+	"dash_100": ["Dash 100 times in one run", "best_dashes", 100],
+	"low_hp_60": ["Spend 60 seconds below half health in one run", "best_low_hp", 60],
+	"win": ["Win a run", "wins", 1],
+	"crit_10": ["Raise Keen Eye to rank 10 in one run", "best_crit", 10],
+	"wins_3": ["Win 3 runs", "wins", 3],
+	"win_ferocious": ["Win a run on Ferocious or harder", "best_tier_won", 2]
+}
+# Completed-quest counts that each grant one more use per run of a build tool.
+const MILESTONES = [[2, "reroll"], [4, "skip"], [5, "banish"], [8, "reroll"], [10, "banish"], [12, "skip"], [14, "reroll"], [16, "banish"]]
+const BASE_TOOLS = {"reroll": 1, "skip": 0, "banish": 0}
+const STAT_KEYS = ["best_time", "best_level", "best_guardians", "best_rank", "best_crit", "best_dashes", "best_low_hp", "best_tier_won", "kills", "chests", "guardians", "evolutions", "evolved_fire", "wins", "runs"]
+
+static func stat(data: Dictionary, key: String) -> int:
+	var value = int(data.get("stats", {}).get(key, 0))
+	# Best time and wins also live at the top level of the save.
+	if key == "best_time": value = maxi(value, int(data.get("best", 0)))
+	if key == "wins": value = maxi(value, int(data.get("wins", 0)))
+	return value
+
+static func quest_done(data: Dictionary, id: String) -> bool:
+	return id == "" or (QUESTS.has(id) and stat(data, QUESTS[id][1]) >= QUESTS[id][2])
+
+static func quest_progress(data: Dictionary, id: String) -> String:
+	if id == "": return ""
+	var rule = QUESTS[id]
+	var value = mini(stat(data, rule[1]), rule[2])
+	if rule[1] == "best_time": return "%d:%02d / %d:%02d" % [value / 60, value % 60, rule[2] / 60, rule[2] % 60]
+	return "%d / %d" % [value, rule[2]]
+
+static func quests_completed(data: Dictionary) -> int:
+	return QUESTS.keys().filter(func(id): return quest_done(data, id)).size()
+
+static func tool_uses(data: Dictionary, tool: String) -> int:
+	var done = quests_completed(data)
+	return BASE_TOOLS[tool] + MILESTONES.filter(func(m): return m[1] == tool and done >= m[0]).size()
+
+static func unlock_quest(key: String, item: bool = false) -> String:
+	return item_def(key).unlock_quest if item else equipment_def(key).unlock_quest
 
 static func unlock_cost(key: String, item: bool = false) -> int:
 	return item_def(key).unlock_gold if item else equipment_def(key).unlock_gold
 
+# Folds one finished run into lifetime stats and returns newly completed quests.
+static func record_run(data: Dictionary, run: Dictionary) -> Array:
+	var before = QUESTS.keys().filter(func(id): return quest_done(data, id))
+	var stats: Dictionary = data.get("stats", {})
+	for key in ["kills", "chests", "guardians", "evolutions", "evolved_fire", "wins", "runs"]:
+		stats[key] = int(stats.get(key, 0)) + int(run.get(key, 0))
+	for key in ["best_time", "best_level", "best_guardians", "best_rank", "best_crit", "best_dashes", "best_low_hp", "best_tier_won"]:
+		stats[key] = maxi(int(stats.get(key, 0)), int(run.get(key, 0)))
+	data.stats = stats
+	data.best = stats.best_time
+	return QUESTS.keys().filter(func(id): return quest_done(data, id) and not before.has(id))
+
 static func purchase_access(data: Dictionary, key: String, item: bool = false) -> bool:
 	if not (ITEMS if item else UPGRADES).has(key): return false
-	if equipment_owned(data, key, item) or data.best < unlock_requirement(key, item) or data.gold < unlock_cost(key, item): return false
+	if equipment_owned(data, key, item) or not quest_done(data, unlock_quest(key, item)) or data.gold < unlock_cost(key, item): return false
 	data.gold -= unlock_cost(key, item)
 	var field = "item_unlocks" if item else "equipment_unlocks"
 	if not data.has(field): data[field] = []
@@ -211,6 +279,14 @@ static func read_save() -> Dictionary:
 		if owned is Array:
 			for key in owned:
 				if entry[1].has(key) and not data[entry[0]].has(key): data[entry[0]].append(key)
+	# Lifetime stats drive quests. Older saves seed them from best time and wins.
+	var stored_stats = config.get_value("coop", "stats", {})
+	data.stats = {}
+	for key in STAT_KEYS:
+		data.stats[key] = maxi(0, int(stored_stats.get(key, 0))) if stored_stats is Dictionary else 0
+	data.stats.best_time = maxi(data.stats.best_time, data.best)
+	data.stats.wins = maxi(data.stats.wins, data.wins)
+	data.best = data.stats.best_time
 	var clears = config.get_value("coop", "level_clears", {"meadow": 1 if data.wins > 0 else 0})
 	data.level_clears = {}
 	for level in LEVELS:

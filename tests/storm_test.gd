@@ -64,9 +64,9 @@ func test():
 	run.arsenal.tick(0)
 	check(targets.filter(func(e): return e.hp < 1000).size() == 1, "Count tome cannot unlock chaining before rank two")
 	run.ranks.thunder = 2
-	check(run.storm_target_count() == 7, "Count tome adds targets once chaining unlocks")
+	check(run.storm_target_count() == 4, "Count tome adds targets once chaining unlocks")
 	run.evolved["thunder"] = true
-	check(run.storm_target_count() == 10, "Evolution retains three bonus targets")
+	check(run.storm_target_count() == 7, "Evolution retains three bonus targets")
 	run.ascension = "whiteout"
-	check(run.storm_target_count() == 22, "Whiteout retains twelve bonus targets")
+	check(run.storm_target_count() == 19, "Whiteout retains twelve bonus targets")
 	quit(1 if failures else 0)

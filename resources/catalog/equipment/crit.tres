@@ -11,3 +11,5 @@ display_name = "Keen Eye"
 description = "+8% critical chance. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits."
 art = ExtResource("1_y27fj")
 icon = ExtResource("2_pwovm")
+unlock_quest = "win"
+unlock_gold = 150

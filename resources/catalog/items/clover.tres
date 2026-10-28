@@ -9,3 +9,5 @@ key = "clover"
 display_name = "Lucky Seed"
 description = "+6% rare-upgrade chance per stack; improves rare chest loot odds."
 icon = ExtResource("1_v3cvy")
+unlock_quest = "level_25"
+unlock_gold = 35

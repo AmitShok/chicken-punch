@@ -10,5 +10,5 @@ display_name = "Wind Charm"
 description = "Dash recharges 15% faster per stack."
 rarity = 1
 icon = ExtResource("1_s6lhw")
-unlock_seconds = 120
-unlock_gold = 40
+unlock_quest = "dash_100"
+unlock_gold = 60

@@ -24,12 +24,12 @@ func test():
 		run.offer_kind = "upgrade"
 		run.pending_levels = 1
 		run.choose_upgrade("projectile_count")
-		check(run.projectile_bonus() == rarity+1, "Rarity %d grants exactly +%d shots" % [rarity,rarity+1])
+		check(run.ranks.projectile_count == rarity+1 and run.projectile_bonus() == (rarity+1) / 2, "Rarity %d grants exactly +%d ranks" % [rarity,rarity+1])
 	run.ranks.projectile_count = 9
 	run.offers = ["projectile_count"]
 	run.offer_rarities = {"projectile_count":2}
 	run.choose_upgrade("projectile_count")
-	check(run.projectile_bonus() == 10, "Count bonus caps at ten near maximum rank")
+	check(run.ranks.projectile_count == 10 and run.projectile_bonus() == 5, "Count tome caps at rank ten (+5 shots)")
 	run.ranks = {"egg":5,"shuriken":5,"fire":5,"orbit":5,"thunder":5,"frost":5,"sickle":5,"shell":5,"projectile_count":3,"projectile_size":5,"projectile_speed":5,"might":5,"haste":5}
 	for i in range(12):
 		var e = run.spawn_enemy("tank")
@@ -44,12 +44,12 @@ func test():
 		if child.get_script() == Shot:
 			counts[child.source] = counts.get(child.source,0)+1
 			check(child.speed_scale == 2 and child.hit_radius == 8 and child.get_node("Sprite").scale == Vector2(2,2), child.source+" has matching visual, hitbox and speed multipliers")
-	for entry in [["egg",8],["shuriken",10],["frost",6],["sickle",4],["shell",4]]:
+	for entry in [["egg",4],["shuriken",8],["frost",4],["sickle",2],["shell",2]]:
 		check(counts.get(entry[0],0) == entry[1], entry[0]+" receives the correct bonus count")
-	check(run.hazards.size() == 1 and is_equal_approx(run.fire_spacing(),65.0*pow(0.9,5)/4), "Brood Burst reduces fire-trail spacing instead of spawning side-by-side patches")
-	check(run.orbit_sprites.size() == 6, "Brood Burst adds orbit blades")
-	check(is_equal_approx(run.cooldowns.egg,0.85*pow(0.9,5)), "Quick Hatch shortens actual attack cooldown")
-	check(run.power() == 2, "Fighting Spirit doubles damage at rank five")
+	check(run.hazards.size() == 1 and is_equal_approx(run.fire_spacing(),65.0*pow(0.95,5)/2), "Brood Burst reduces fire-trail spacing instead of spawning side-by-side patches")
+	check(run.orbit_sprites.size() == 4, "Brood Burst adds orbit blades")
+	check(is_equal_approx(run.cooldowns.egg,0.85*pow(0.95,5)), "Quick Hatch shortens actual attack cooldown")
+	check(is_equal_approx(run.power(), 1.5), "Fighting Spirit adds 50% damage at rank five")
 	for enemy in run.enemies: enemy.queue_free()
 	run.enemies.clear()
 	for child in run.get_children():

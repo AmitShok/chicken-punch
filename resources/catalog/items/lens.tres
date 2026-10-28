@@ -10,5 +10,5 @@ display_name = "Hawk Eye"
 description = "+8% critical chance per stack. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits."
 rarity = 1
 icon = ExtResource("1_u6yms")
-unlock_seconds = 120
-unlock_gold = 40
+unlock_quest = "crit_10"
+unlock_gold = 120

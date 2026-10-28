@@ -11,3 +11,5 @@ display_name = "Iron Shell"
 description = "Reduce incoming damage by 1. Guard rank 10 + this tome + chest evolves Guard."
 art = ExtResource("1_dg7n2")
 icon = ExtResource("2_g3m17")
+unlock_quest = "kills_500"
+unlock_gold = 30

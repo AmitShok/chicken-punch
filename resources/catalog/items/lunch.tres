@@ -10,3 +10,4 @@ display_name = "Packed Lunch"
 description = "Heal 12 health per stack whenever you open a chest."
 icon = ExtResource("1_sqygn")
 starter = true
+unlock_gold = 0

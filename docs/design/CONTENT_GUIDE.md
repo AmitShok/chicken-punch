@@ -11,7 +11,7 @@ Weapons, tomes, items and defenders are Godot resources in `resources/catalog/`.
 ## What needs only data
 
 - **Rename, reword, re-price or re-icon** anything: edit its `.tres`.
-- **Change unlocks:** `starter`, `unlock_seconds` (best survival time) and `unlock_gold`.
+- **Change unlocks:** `starter`, `unlock_quest` (an id from `Data.QUESTS`) and `unlock_gold`. See PROGRESSION_REBALANCE.md.
 - **Item rarity:** changes chest odds, card colour and slot colour.
 - **Max rank** for a weapon or tome.
 - **Evolution text and art:** `evolution_name`, `evolution_effect` and `evolved_icon`. The recipe itself is `evolution_tome`.

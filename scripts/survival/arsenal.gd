@@ -16,7 +16,7 @@ func tick(delta: float):
 			continue
 		run.play_sound(key)
 		var rank = run.ranks[key]
-		var haste = pow(0.9, run.ranks.get("haste", 0)) * run.ascension_cooldown(key)
+		var haste = run.haste_multiplier() * run.ascension_cooldown(key)
 		var evolved = run.evolved.has(key)
 		var dir = run.player.global_position.direction_to(target.global_position)
 		match key:

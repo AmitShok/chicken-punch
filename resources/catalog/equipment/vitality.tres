@@ -12,3 +12,4 @@ description = "+20 maximum health and heal 20."
 art = ExtResource("1_tt7sc")
 icon = ExtResource("2_8msre")
 starter = true
+unlock_gold = 0

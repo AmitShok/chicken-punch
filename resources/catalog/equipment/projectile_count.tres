@@ -8,6 +8,8 @@
 script = ExtResource("3_weubk")
 key = "projectile_count"
 display_name = "Brood Burst"
-description = "Extra shots, blades and chain targets; denser fire trails. +1 / +2 / +3 by rarity."
+description = "One extra shot, blade or chain target for every two ranks; denser fire trails. +1 / +2 / +3 ranks by rarity."
 art = ExtResource("1_5fixq")
 icon = ExtResource("2_jlh4x")
+unlock_quest = "wins_3"
+unlock_gold = 250

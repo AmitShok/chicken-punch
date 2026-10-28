@@ -8,7 +8,8 @@
 script = ExtResource("3_1va8p")
 key = "might"
 display_name = "Fighting Spirit"
-description = "DAMAGE: +20% damage to every weapon per rank."
+description = "DAMAGE: +10% damage to every weapon per rank."
 art = ExtResource("1_vhi8f")
 icon = ExtResource("2_8tlif")
-starter = true
+unlock_quest = "guardian_1"
+unlock_gold = 80

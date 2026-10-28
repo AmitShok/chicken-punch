@@ -10,5 +10,5 @@ display_name = "Blast Powder"
 description = "Every 8th kill explodes for 20 damage per stack."
 rarity = 2
 icon = ExtResource("1_ymyxr")
-unlock_seconds = 240
-unlock_gold = 60
+unlock_quest = "evolve_fire"
+unlock_gold = 150

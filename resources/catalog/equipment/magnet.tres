@@ -11,3 +11,5 @@ display_name = "Forager"
 description = "+30 pickup radius and +10% XP."
 art = ExtResource("1_f0fle")
 icon = ExtResource("2_gbt2l")
+starter = true
+unlock_gold = 0

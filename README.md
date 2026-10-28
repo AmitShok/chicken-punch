@@ -26,6 +26,7 @@ Import `project.godot` into Godot and press F6 on `scenes/ui/main_menu.tscn`, or
 | `assets/` | Downloaded packs, character art, custom Coop artwork, sprites, reference art, and UI icons |
 | `tests/` | Automated gameplay and regression checks |
 | `tools/capture/` | Screenshot and visual-inspection scripts |
+| `tools/balance/` | Balance simulator, weapon benchmark and guardian race |
 | `docs/design/` | Design review and expansion notes |
 
 Downloaded packs retain their original internal structure and licenses. Custom Aseprite sources live beside their exported PNGs. Godot `.uid` and `.import` files are resource metadata and should stay alongside their source files.
@@ -40,6 +41,8 @@ godot --headless --path . --script res://tests/progression_test.gd
 godot --headless --path . --script res://tests/expansion_test.gd
 godot --headless --path . --script res://tests/music_map_test.gd
 godot --headless --path . --script res://tests/catalog_test.gd
+godot --headless --path . --script res://tests/quest_test.gd
+godot --headless --path . --script res://tools/balance/boss_race.gd
 godot --path . --script res://tools/capture/capture_menu.gd -- <existing-output-directory>
 ```
 

@@ -35,6 +35,9 @@ func test():
 	var chosen = scene.offers[0]
 	scene.choose_upgrade(chosen)
 	check(not paused and scene.pending_levels == 2, "Choice resumes and consumes exactly one queued upgrade")
+	check(scene.rerolls == 1 and scene.banishes == 0 and scene.skips == 0, "A new save starts with one reroll and no banish or skip")
+	scene.rerolls = 3
+	scene.banishes = 2
 	scene.show_upgrades()
 	scene.reroll()
 	check(scene.rerolls == 2, "Rerolls consume their budget")

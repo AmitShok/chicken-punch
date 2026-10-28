@@ -8,13 +8,12 @@
 script = ExtResource("3_g2oab")
 key = "egg"
 display_name = "Egg Barrage"
-description = "Another egg per volley; +4 damage."
+description = "Another egg every second rank; +4 damage per rank."
 kind = 0
 art = ExtResource("1_8k5hl")
 icon = ExtResource("1_8k5hl")
 starter = true
-unlock_seconds = 120
-unlock_gold = 60
+unlock_gold = 0
 evolution_tome = "haste"
 evolution_name = "Golden Omelette"
 evolution_effect = "Three extra eggs in every volley. Every hit now deals splash damage."
