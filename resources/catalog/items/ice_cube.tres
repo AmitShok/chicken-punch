@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/Water.png" id="1_s32uw"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_qdt7k"]
+
+[resource]
+script = ExtResource("2_qdt7k")
+key = "ice_cube"
+display_name = "Ice Cube"
+description = "3% chance per stack to freeze an enemy on hit for 1.2 seconds."
+rarity = 1
+icon = ExtResource("1_s32uw")
+unlock_quest = "evolve"
+unlock_gold = 70

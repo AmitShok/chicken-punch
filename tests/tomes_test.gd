@@ -24,12 +24,12 @@ func test():
 		run.offer_kind = "upgrade"
 		run.pending_levels = 1
 		run.choose_upgrade("projectile_count")
-		check(run.ranks.projectile_count == rarity+1 and run.projectile_bonus() == (rarity+1) / 2, "Rarity %d grants exactly +%d ranks" % [rarity,rarity+1])
-	run.ranks.projectile_count = 9
+		check(run.ranks.projectile_count == 1 and is_equal_approx(run.level("projectile_count"), [1.0, 1.5, 2.0][rarity]) and run.projectile_bonus() == (1 if rarity == 2 else 0), "Rarity %d adds one rank at x%.1f strength" % [rarity, [1.0, 1.5, 2.0][rarity]])
+	run.ranks = {"egg": 1, "projectile_count": 9}
 	run.offers = ["projectile_count"]
 	run.offer_rarities = {"projectile_count":2}
 	run.choose_upgrade("projectile_count")
-	check(run.ranks.projectile_count == 10 and run.projectile_bonus() == 5, "Count tome caps at rank ten (+5 shots)")
+	check(run.ranks.projectile_count == 10 and run.projectile_bonus() == 5, "Count tome caps at rank ten; an epic last pick reaches +5 shots")
 	run.ranks = {"egg":5,"shuriken":5,"fire":5,"orbit":5,"thunder":5,"frost":5,"sickle":5,"shell":5,"projectile_count":3,"projectile_size":5,"projectile_speed":5,"might":5,"haste":5}
 	for i in range(12):
 		var e = run.spawn_enemy("tank")

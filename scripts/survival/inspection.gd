@@ -21,7 +21,7 @@ static func describe(run: Node, key: String, item: bool) -> String:
 	else:
 		match key:
 			"projectile_speed": text += "+%d%% projectile travel and orbit rotation speed. Instant lightning and stationary fire do not travel." % (count*20)
-			"projectile_count": text += "+%d shots, sickles, orbit blades or lightning targets (Storm Call rank 2+): one per two ranks. Hot Foot spacing is divided by (1 + bonus), creating a denser trail. Picks grant +1 / +2 / +3 ranks by rarity, capped at rank 10 (+5)." % run.projectile_bonus()
+			"projectile_count": text += "+%d shots, sickles, orbit blades or lightning targets (Storm Call rank 2+): one per two ranks. Hot Foot spacing is divided by (1 + bonus), creating a denser trail. Rare and epic picks count as 1.5 and 2 levels; an all-epic Brood Burst reaches +10." % run.projectile_bonus()
 			"projectile_size": text += "+%d%% sprite scale and hit radius. Also affects fire, explosion radii and lightning reach. Multiplies with Wide Wings for area effects." % (count*20)
 			"might": text += "+%d%% damage to all weapons." % roundi(count * run.MIGHT_PER_RANK * 100)
 			"haste": text += "Weapon cooldowns multiplied by %.3f (%d%% shorter)." % [run.haste_multiplier(),roundi((1-run.haste_multiplier())*100)]
@@ -33,6 +33,10 @@ static func describe(run: Node, key: String, item: bool) -> String:
 			"regen": text += "Regenerate %.1f HP per second." % (count*0.4)
 			"crit": text += "+%d percentage points critical chance. Total chance: %d%% ; above 100%% rolls 4x overcrits." % [count*8, roundi(run.critical_chance()*100)]
 			"duration": text += "+%d%% effect duration. Lingering fire stays active longer and icy slows wear off later. Applies to Hot Foot / Phoenix Trail fire patches and Frost Quills / Deep Winter slows. Rank 10 triples their duration." % (count*20)
+			"luck": text += "+%d%% rare and epic upgrade odds; rare and epic chest items are %d%% more likely." % [roundi(run.level("luck") * 4), roundi(run.level("luck") * 15)]
+			"thorns": text += "Enemies that hit you take %.0f damage." % ((8 + run.level("thorns") * 6) * run.power())
+			"evasion": text += "%d%% chance to dodge a hit completely (max 40%%)." % roundi(run.dodge_chance() * 100)
+			"greed": text += "Coin pickups are worth x%.2f." % run.coin_multiplier()
 		for weapon in Data.EVOLUTIONS:
 			if Data.EVOLUTIONS[weapon][0] == key:
 				text += "\n\nEVOLUTION PARTNER\n" + Data.UPGRADES[weapon][0] + " rank 10 + this tome rank 1 + chest = " + Data.EVOLUTIONS[weapon][1]
@@ -62,10 +66,16 @@ static func item_effect(run: Node, key: String, n: int) -> String:
 		"powder": return "Every eighth kill explodes for %.1f damage with current damage bonuses. Next trigger in %d kills." % [20*n*run.power(),8-run.kills%8]
 		"blood_seed": return "Every fifteenth kill heals %d HP. Next trigger in %d kills." % [3*n,15-run.kills%15]
 		"berserk": return "+%d%% damage below 50%% HP. Currently %s." % [25*n,"ACTIVE" if run.player.hp < run.player.max_hp*0.5 else "inactive"]
-		"silk": return "Dash cooldown multiplied by %.3f. Current cooldown: %.2fs." % [pow(0.85,n),run.dash_recharge()]
+		"silk": return "Ability cooldown multiplied by %.3f. Current cooldown: %.2fs." % [pow(0.85,n),run.ability_recharge()]
 		"crown": return "+%d%% damage to elites and guardians." % (20*n)
 		"compass": return "+%d%% XP." % (12*n)
 		"bead": return "+%d armor. Total armor: %d." % [n,run.armor_value()]
+		"oats": return "+%d max health." % (10*n)
+		"cheese": return "%d%% chance on hit to poison for 30%% of the hit per second, 3 seconds." % (8*n)
+		"ice_cube": return "%d%% chance on hit to freeze an enemy for 1.2 seconds. Guardians resist." % (3*n)
+		"hot_sauce": return "Critical hits deal %.2fx instead of 2x, multiplied again for each overcrit tier." % (2 + 0.25*n)
+		"anvil": return "Weapon level-ups add +%d%% more stats." % (25*n)
+		"mallet": return "%d%% chance for any hit to deal 20x damage." % (2*n)
 	return ""
 
 static func weapon_effect(run: Node, key: String, rank: int) -> String:
@@ -73,13 +83,18 @@ static func weapon_effect(run: Node, key: String, rank: int) -> String:
 	var cooldown = run.haste_multiplier() * run.ascension_cooldown(key)
 	var evolved = run.evolved.has(key)
 	var extra = run.projectile_bonus()
+	var lv = run.level(key)
 	match key:
-		"egg": return "%d eggs per volley. %.1f damage per hit. Volley every %.2fs.%s" % [1+int(rank/2)+(3 if evolved else 0)+(8 if run.ascension=="henpocalypse" else 0)+extra,(10+rank*4)*power,0.85*cooldown," Splash deals 60% hit damage." if evolved else ""]
-		"shuriken": return "%d blades per fan; %d pierce. %.1f damage per hit. Fan every %.2fs." % [rank+2+(3 if evolved else 0)+extra,rank+2,(10+rank*4)*power,1.6*cooldown]
-		"fire": return "%.1f damage per tick (every 0.4s). Trail spacing %.1f pixels; stationary patch every %.2fs. Patches last %.2fs. Radius %.1f. Overlapping flames do not stack." % [(4+rank*3)*power,run.fire_spacing(),run.fire_spacing()/100.0,(2+rank*0.5)*run.duration_multiplier(),17*run.area_multiplier()*run.weapon_size_multiplier()*(1.6 if evolved else 1)]
-		"orbit": return "%d orbiting blades. %.1f damage per contact check (every %.2fs)." % [1+int(rank/2)+(2 if evolved else 0)+(8 if run.ascension=="reaping" else 0)+extra,(5+rank*3)*power,0.22*run.haste_multiplier()]
-		"thunder": return "%d targets per cast. %.1f damage per strike. Cast every %.2fs." % [run.storm_target_count(rank),(14+rank*6)*power,2*cooldown]
-		"frost": return "%d shards; %d pierce. %.1f damage per hit. Cast every %.2fs. Slows by %d%% for %.2fs." % [1+int(rank/2)+(2 if evolved else 0)+(6 if run.ascension=="whiteout" else 0)+extra,2+rank,(9+rank*4)*power,1.35*cooldown,70 if evolved else 45,(3.5 if evolved else 2)*run.duration_multiplier()]
-		"sickle": return "%d returning sickles. %.1f damage per hit. Cast every %.2fs. Can hit each enemy once outbound and once returning." % [(4 if run.ascension=="reaping" else 2 if evolved else 1)+extra,(14+rank*6)*power,1.8*cooldown]
-		"shell": return "%d shells per volley. %.1f damage per explosion. Radius %.1f. Launch every %.2fs." % [1+extra,(22+rank*9)*power,(26+rank*3)*run.area_multiplier()*run.weapon_size_multiplier()*(1.45 if evolved else 1),2.3*cooldown]
+		"egg": return "%d eggs per volley. %.1f damage per hit. Volley every %.2fs.%s" % [1+int(rank/2)+(3 if evolved else 0)+(8 if run.ascension=="henpocalypse" else 0)+extra,(13+lv*4)*power,0.85*cooldown," Splash deals 60% hit damage." if evolved else ""]
+		"shuriken": return "%d blades per fan; %d pierce. %.1f damage per hit. Fan every %.2fs." % [rank+2+(3 if evolved else 0)+extra,rank+2,(10+lv*4)*power,1.6*cooldown]
+		"fire": return "%.1f damage per tick (every 0.4s). Trail spacing %.1f pixels; stationary patch every %.2fs. Patches last %.2fs. Radius %.1f. Overlapping flames do not stack." % [(5+lv*3)*power,run.fire_spacing(),run.fire_spacing()/100.0,(2+lv*0.5)*run.duration_multiplier(),17*run.area_multiplier()*run.weapon_size_multiplier()*(1.6 if evolved else 1)]
+		"orbit": return "%d orbiting blades. %.1f damage per contact check (every %.2fs)." % [1+int(rank/2)+(2 if evolved else 0)+(8 if run.ascension=="reaping" else 0)+extra,(5+lv*3)*power,0.22*run.haste_multiplier()]
+		"thunder": return "%d targets per cast. %.1f damage per strike. Cast every %.2fs." % [run.storm_target_count(rank),(14+lv*6)*power,2*cooldown]
+		"frost": return "%d shards; %d pierce. %.1f damage per hit. Cast every %.2fs. Slows by %d%% for %.2fs." % [1+int(rank/2)+(2 if evolved else 0)+(6 if run.ascension=="whiteout" else 0)+extra,2+rank,(9+lv*4)*power,1.35*cooldown,70 if evolved else 45,(3.5 if evolved else 2)*run.duration_multiplier()]
+		"sickle": return "%d returning sickles. %.1f damage per hit. Cast every %.2fs. Can hit each enemy once outbound and once returning." % [(4 if run.ascension=="reaping" else 2 if evolved else 1)+extra,(14+lv*6)*power,1.8*cooldown]
+		"shell": return "%d shells per volley. %.1f damage per explosion. Radius %.1f. Launch every %.2fs." % [1+extra,(22+lv*9)*power,(26+lv*3)*run.area_multiplier()*run.weapon_size_multiplier()*(1.45 if evolved else 1),2.3*cooldown]
+		"pitchfork": return "%d jabs per thrust, %.0f reach. %.1f damage per hit. Thrust every %.2fs." % [1+(1 if rank>=6 else 0)+extra+(2 if evolved else 0),58*run.area_multiplier()*run.weapon_size_multiplier()*(1.5 if evolved else 1.0),(20+lv*9)*power,0.9*cooldown]
+		"carrot": return "%d carrots per shot, %d pierce. %.1f damage per hit. Fires every %.2fs.%s" % [1+extra,3 if evolved else 1,(12+lv*6)*power,0.3*cooldown*(0.6 if evolved else 1.0)," +25%% critical chance." if evolved else ""]
+		"stink": return "Radius %.0f. %.1f damage every %.2fs to everything inside, slowing by %d%%." % [run.stink_radius(),(5+lv*2.5)*power,0.5*cooldown,50 if evolved else 25]
+		"parrot": return "%d homing parrots every %.2fs. %.1f damage per hit, 2 pierce.%s" % [1+int(rank/3)+extra+(2 if evolved else 0),2.2*cooldown,(12+lv*5)*power," Kills drop coins 30%% of the time." if evolved else ""]
 	return ""

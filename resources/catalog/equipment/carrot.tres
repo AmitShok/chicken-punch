@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Food/SeedBig1.png" id="1_p8l63"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_carrot.png" id="2_crwvk"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_xiu6x"]
+
+[resource]
+script = ExtResource("3_xiu6x")
+key = "carrot"
+display_name = "Carrot Cannon"
+description = "Rapid single shots at the nearest enemy. Built to chew through guardians."
+kind = 0
+art = ExtResource("1_p8l63")
+icon = ExtResource("1_p8l63")
+unlock_quest = "guardian_2"
+unlock_gold = 180
+evolution_tome = "luck"
+evolution_name = "Golden Carrot"
+evolution_effect = "Fires 40% faster, pierces three enemies and gains +25% critical chance."
+evolved_icon = ExtResource("2_crwvk")

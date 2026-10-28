@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_ld1fc"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Frog/SpriteSheet.png" id="2_e4pqj"]
+
+[resource]
+script = ExtResource("1_ld1fc")
+key = "frog"
+display_name = "Paddles"
+flavor = "A pond frog who fights from inside a cloud of swamp stink."
+starting_weapon = "stink"
+sprite_sheet = ExtResource("2_e4pqj")
+unlock_gold = 100
+unlock_quest = "kills_2500"
+ability_name = "Leap"
+ability_description = "Hop clear of danger and splash mud that damages and slows where you land."
+ability_cooldown = 5.0
+passive_description = "+0.5 health regeneration per second."

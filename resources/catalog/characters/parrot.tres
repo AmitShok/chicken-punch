@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_7bqnr"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Parrot/SpriteSheetBlue.png" id="2_r8pqn"]
+
+[resource]
+script = ExtResource("1_7bqnr")
+key = "parrot"
+display_name = "Captain Squawk"
+flavor = "A loud ship's parrot with a flock that never misses."
+starting_weapon = "parrot"
+sprite_sheet = ExtResource("2_r8pqn")
+unlock_gold = 120
+unlock_quest = "chests_25"
+ability_name = "Squawk"
+ability_description = "Blast nearby enemies away and stun them briefly."
+ability_cooldown = 10.0
+passive_description = "+25% coins."

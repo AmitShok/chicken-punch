@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/feather.png" id="1_262q5"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_evasion.png" id="2_p7ld0"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_jhy5a"]
+
+[resource]
+script = ExtResource("3_jhy5a")
+key = "evasion"
+display_name = "Feather Step"
+description = "+4% chance per level to dodge a hit completely, up to 40%. Evolves Stink Cloud."
+art = ExtResource("1_262q5")
+icon = ExtResource("2_p7ld0")
+unlock_quest = "ability_50"
+unlock_gold = 60

@@ -41,6 +41,11 @@ var steam_lock = 0.0
 var roast_stacks = 0
 var roast_time = 0.0
 var slow_factor = 1.0
+# Moldy Cheese poison, and which weapon landed the last hit (for kill rewards).
+var poison_time = 0.0
+var poison_dps = 0.0
+var poison_clock = 0.0
+var last_source = ""
 
 func _ready():
 	collision_layer = 4
@@ -133,6 +138,13 @@ func _physics_process(delta):
 	roast_time = maxf(0, roast_time - delta)
 	if roast_time <= 0: roast_stacks = 0
 	slow_time = maxf(0, slow_time - delta)
+	if poison_time > 0:
+		poison_time -= delta
+		poison_clock -= delta
+		if poison_clock <= 0:
+			poison_clock = 0.5
+			run.deal_damage(self, poison_dps * 0.5, Vector2.ZERO, "poison")
+			if dead: return
 	update_feedback(delta)
 	$Sprite2D.modulate = Color("9be5ff") if slow_time > 0 else Color("ffad75") if roast_stacks > 0 else Color("ffd879") if elite else Color.WHITE
 	var player = run.player
@@ -178,7 +190,8 @@ func _physics_process(delta):
 	move_and_slide()
 	$Sprite2D.flip_h = offset.x < 0
 	if distance < radius + 7:
-		player.take_damage(damage * run.difficulty)
+		if player.take_damage(damage * run.difficulty):
+			run.on_player_struck(self)
 	if distance > 700 and not boss and not elite:
 		queue_free()
 	if elite or boss or health_reveal > 0: queue_redraw()

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/BarGold.png" id="1_0wcqd"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_luck.png" id="2_vp6fu"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_sos6g"]
+
+[resource]
+script = ExtResource("3_sos6g")
+key = "luck"
+display_name = "Lucky Horseshoe"
+description = "+4% chance of rare and epic upgrades per level, and better chest odds. Carrot Cannon rank 10 + this tome + chest evolves it."
+art = ExtResource("1_0wcqd")
+icon = ExtResource("2_vp6fu")
+unlock_quest = "level_25"
+unlock_gold = 70

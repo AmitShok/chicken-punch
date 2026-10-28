@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Weapons/Hammer/Sprite.png" id="1_35ru8"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_eapd1"]
+
+[resource]
+script = ExtResource("2_eapd1")
+key = "mallet"
+display_name = "Big Bonk Mallet"
+description = "2% chance per stack for a hit to deal 20x damage."
+rarity = 2
+icon = ExtResource("1_35ru8")
+unlock_quest = "win_ferocious"
+unlock_gold = 180

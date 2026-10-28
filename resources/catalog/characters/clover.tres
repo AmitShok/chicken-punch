@@ -14,3 +14,7 @@ cell = Vector2i(24, 16)
 faces_left = true
 unlock_gold = 120
 unlock_quest = "win"
+ability_name = "Hold the Line"
+ability_description = "2.5 seconds of invulnerability while your orbiting blades spin and strike twice as fast."
+ability_cooldown = 14.0
+passive_description = "+15% area."

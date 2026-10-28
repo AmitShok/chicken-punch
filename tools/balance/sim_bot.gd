@@ -53,7 +53,7 @@ func _physics_process(_delta):
 	else: Input.action_press("left", -steer.x)
 	if steer.y > 0: Input.action_press("down", steer.y)
 	else: Input.action_press("up", -steer.y)
-	if closest < 18 and run.player.dash_cooldown <= 0 and not dash_held:
+	if closest < 18 and run.player.ability_cooldown <= 0 and not dash_held:
 		Input.action_press("dash")
 		dash_held = true
 	elif dash_held:

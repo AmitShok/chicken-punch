@@ -18,7 +18,7 @@ var peak_dps_note = ""
 
 # Preference order for upgrade picks; earlier entries are taken first.
 const PLANS = {
-	"greedy": ["egg", "shuriken", "thunder", "shell", "fire", "frost", "orbit", "sickle", "projectile_count", "might", "haste", "crit", "area", "vitality", "regen", "armor", "magnet", "speed", "duration", "projectile_size", "projectile_speed"],
+	"greedy": ["egg", "shuriken", "carrot", "parrot", "thunder", "shell", "stink", "pitchfork", "fire", "frost", "orbit", "sickle", "projectile_count", "might", "haste", "crit", "area", "vitality", "regen", "armor", "magnet", "speed", "duration", "projectile_size", "projectile_speed", "luck", "thorns", "evasion", "greed"],
 	"overcrit": ["thunder", "frost", "crit", "duration", "might", "projectile_count", "haste", "vitality", "armor", "regen", "egg", "shuriken", "shell", "fire", "orbit", "sickle", "magnet", "area", "speed", "projectile_size", "projectile_speed"],
 	"roast": ["fire", "egg", "area", "duration", "haste", "might", "vitality", "projectile_count", "armor", "regen", "crit", "shell", "frost", "thunder", "orbit", "sickle", "shuriken", "magnet", "speed", "projectile_size", "projectile_speed"]
 }

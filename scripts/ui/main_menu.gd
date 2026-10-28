@@ -140,6 +140,7 @@ func build_home(left: VBoxContainer, right: VBoxContainer):
 	flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(flavor)
 	left.add_child(UI.label("Starts with " + Data.UPGRADES[Data.CHARACTERS[preview][1]][0], 16))
+	left.add_child(ability_text(preview))
 	left.add_child(UI.label("Defenders owned  %d / %d" % [save.unlocked.size(), Data.CHARACTERS.size()], 16))
 	right.add_child(page_heading("WHAT WILL IT BE TONIGHT?"))
 	var start = list_row("SURVIVE THE NIGHT", Book.art("IconPlay01a"), show_setup)
@@ -206,6 +207,7 @@ func build_setup(left: VBoxContainer, right: VBoxContainer):
 		modes.add_child(card)
 	right.add_child(UI.label(Data.DIFFICULTIES[difficulty_index].description, 16))
 	right.add_child(UI.label(Data.CHARACTERS[preview][3], 16))
+	right.add_child(ability_text(preview))
 	right.add_child(UI.label("Starting weapon: %s    Weapon slots %d / Tome slots %d" % [Data.UPGRADES[Data.CHARACTERS[preview][1]][0], Data.training(save,preview).weapon_slots, Data.training(save,preview).tome_slots], 16))
 	var push = Control.new()
 	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -282,6 +284,7 @@ func build_shop_detail(right: VBoxContainer):
 	heading_text.add_child(entry_name)
 	heading_text.add_child(page_heading(["WEAPON", "TOME", "ITEM", "DEFENDER"][shop_tab]))
 	right.add_child(UI.label("Starts with " + Data.UPGRADES[info[1]][0] + ". " + info[3] if character else info[1], 16))
+	if character: right.add_child(ability_text(key))
 	var push = Control.new()
 	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(push)
@@ -574,3 +577,9 @@ func restore_scroll(scroll: ScrollContainer):
 	if is_instance_valid(scroll):
 		scroll.scroll_vertical = offset
 		scroll.modulate.a = 1.0
+
+static func ability_text(key: String) -> Label:
+	var def = Data.character_def(key)
+	var text = UI.label("SPACE  /  %s (%ds): %s\nPASSIVE  /  %s" % [def.ability_name, def.ability_cooldown, def.ability_description, def.passive_description], 16)
+	text.add_theme_color_override("font_color", UI.LEAF)
+	return text

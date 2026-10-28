@@ -22,6 +22,8 @@ var return_hits = 0
 var age = 0.0
 var detonates = false
 var destination = Vector2.ZERO
+# Turn rate in radians per second toward the nearest enemy (Parrot Squadron).
+var homing = 0.0
 
 func _physics_process(delta):
 	if not active: return
@@ -41,6 +43,19 @@ func _physics_process(delta):
 			run.complete_sickle_return(return_hits)
 			retire()
 			return
+	if homing > 0 and not hostile:
+		var prey = null
+		var best = 200.0 * 200.0
+		for enemy in run.nearby_enemies(global_position, 200):
+			if not is_instance_valid(enemy) or enemy.dead or hit_ids.has(enemy.get_instance_id()): continue
+			var d = global_position.distance_squared_to(enemy.global_position)
+			if d < best:
+				best = d
+				prey = enemy
+		if prey:
+			var wanted = global_position.direction_to(prey.global_position)
+			direction = direction.rotated(clampf(direction.angle_to(wanted), -homing * delta, homing * delta))
+			$Sprite.flip_h = direction.x < 0
 	var start = global_position
 	global_position += direction * speed * speed_scale * delta
 	if returning and Geometry2D.get_closest_point_to_segment(run.player.global_position, start, global_position).distance_to(run.player.global_position) < 10:
@@ -117,3 +132,4 @@ func reset_projectile():
 	age = 0.0
 	detonates = false
 	destination = Vector2.ZERO
+	homing = 0.0

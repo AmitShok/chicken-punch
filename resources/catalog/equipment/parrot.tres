@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Parrot/SpriteSheetBlue.png" id="1_p8a06"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Parrot/SpriteSheetRed.png" id="2_t2bn1"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_yo4mo"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gkrrl"]
+atlas = ExtResource("1_p8a06")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hw3ah"]
+atlas = ExtResource("2_t2bn1")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("3_yo4mo")
+key = "parrot"
+display_name = "Parrot Squadron"
+description = "Homing parrots seek out enemies. Another bird every third rank."
+kind = 0
+art = SubResource("AtlasTexture_gkrrl")
+icon = SubResource("AtlasTexture_gkrrl")
+unlock_quest = "chests_25"
+unlock_gold = 110
+evolution_tome = "greed"
+evolution_name = "Pirate Flock"
+evolution_effect = "Two extra parrots, and their kills drop coins 30% of the time."
+evolved_icon = SubResource("AtlasTexture_hw3ah")

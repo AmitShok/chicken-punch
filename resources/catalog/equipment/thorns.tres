@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/Branch.png" id="1_5bq0s"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_thorns.png" id="2_3y2mj"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_skm6i"]
+
+[resource]
+script = ExtResource("3_skm6i")
+key = "thorns"
+display_name = "Bramble Coat"
+description = "Enemies that hit you take 8 + 6 per level damage, scaled by damage bonuses. Evolves the Pitchfork."
+art = ExtResource("1_5bq0s")
+icon = ExtResource("2_3y2mj")
+unlock_quest = "kills_1000"
+unlock_gold = 50

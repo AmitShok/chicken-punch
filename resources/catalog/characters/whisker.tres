@@ -12,3 +12,7 @@ starting_weapon = "sickle"
 sprite_sheet = ExtResource("2_c2qsl")
 unlock_gold = 60
 unlock_quest = "kills_1000"
+ability_name = "Pounce"
+ability_description = "Leap onto the nearest enemy and strike where you land."
+ability_cooldown = 6.0
+passive_description = "+10% critical chance."

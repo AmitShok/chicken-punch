@@ -15,7 +15,7 @@ Weapons, tomes, items and defenders are Godot resources in `resources/catalog/`.
 - **Item rarity:** changes chest odds, card colour and slot colour.
 - **Max rank** for a weapon or tome.
 - **Evolution text and art:** `evolution_name`, `evolution_effect` and `evolved_icon`. The recipe itself is `evolution_tome`.
-- **A new defender** that starts with an existing weapon: duplicate a defender `.tres`, set the sprite sheet, `cell` (frame size), `faces_left`, price and starting weapon, then add it to `catalog.tres`. No code needed.
+- **A new defender** that starts with an existing weapon and reuses an existing ability: duplicate a defender `.tres`, set the sprite sheet, `cell` (frame size), `faces_left`, price, quest, starting weapon and ability text, then add it to `catalog.tres`. A new ability or passive needs code in `scripts/survival/abilities.gd` (ability) and the `hero ==` checks in `run.gd` (passive).
 
 ## What still needs code
 

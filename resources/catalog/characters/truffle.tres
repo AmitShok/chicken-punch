@@ -13,3 +13,7 @@ sprite_sheet = ExtResource("2_fdc14")
 faces_left = true
 unlock_gold = 90
 unlock_quest = "guardian_1"
+ability_name = "Ground Pound"
+ability_description = "A shockwave that damages and stuns everything nearby."
+ability_cooldown = 9.0
+passive_description = "+20 max health and +1 armor."

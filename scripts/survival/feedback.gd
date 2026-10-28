@@ -31,7 +31,7 @@ func _process(delta):
 	shake = move_toward(shake, 0, delta * 14)
 	camera.offset = Vector2(sin(phase), cos(phase * 1.3)) * shake
 	dash_clock -= delta
-	if enabled() and not run.ended and run.player.dash_time > 0 and dash_clock <= 0:
+	if enabled() and not run.ended and run.player.lunge_time > 0 and dash_clock <= 0:
 		dash_clock = 0.045
 		echo(run.player.animated_sprite_2d, run.player.velocity * 0.025, Color("ffe3a0"), 0.18)
 		puff(run.player.global_position, run.player.velocity * 0.12, Color("e4d7ab"), 0.34, 0.22)

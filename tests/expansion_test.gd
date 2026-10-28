@@ -57,7 +57,7 @@ func test():
 	scene.offer_rarities = {"vitality": 2}
 	var old_health = scene.player.max_hp
 	scene.choose_upgrade("vitality")
-	check(scene.ranks.vitality == 4 and scene.player.max_hp == old_health + 60, "Epic upgrades apply all three ranks and health gains")
+	check(scene.ranks.vitality == 2 and scene.player.max_hp == old_health + 40, "Epic upgrades add one rank with double the health gain")
 	scene.offers = ["egg"]
 	scene.offer_rarities = {"egg": 2}
 	scene.choose_upgrade("egg")
@@ -84,7 +84,7 @@ func test():
 		scene.ranks = {key: 10, Data.EVOLUTIONS[key][0]: 1}
 		scene.collect({"kind": "chest"})
 		check(scene.evolved.has(key), "Evolution recipe activates: " + key)
-	check(scene.pending_evolutions.size() == 8, "All evolution reveals are queued without overwriting")
+	check(scene.pending_evolutions.size() == Data.EVOLUTIONS.size(), "All evolution reveals are queued without overwriting")
 	scene.ui.show_evolution("egg")
 	check(scene.ui.mode == "evolution", "Evolution reveal presents the transformation")
 	scene.ui.close_modal()
@@ -125,11 +125,11 @@ func test():
 	scene.ranks = {"orbit": 1}
 	scene.items = {"bead": 2}
 	first = target(scene.player.global_position + Vector2(15, 0))
-	scene.on_dash()
-	check(first.hp == 976, "Iron Wake damages nearby enemies on dash")
+	scene.on_ability()
+	check(first.hp == 976, "Iron Wake damages nearby enemies when the ability is used")
 	scene.items = {"bead": 2, "honey": 2, "silk": 2, "magnet_stone": 2, "lens": 2, "compass": 2}
 	check(scene.armor_value() == 2 and is_equal_approx(scene.regeneration(), 0.6), "Defensive items modify armor and regeneration")
-	check(scene.dash_recharge() < 2.2 and scene.pickup_radius() == 95 and is_equal_approx(scene.critical_chance(), 0.16), "Utility items modify dash, pickup and critical chance")
+	check(scene.ability_recharge() < 2.2 and scene.pickup_radius() == 95 and is_equal_approx(scene.critical_chance(), 0.16), "Utility items modify dash, pickup and critical chance")
 	clear_targets()
 	scene.ranks = {"shell": 1}
 	scene.items.clear()

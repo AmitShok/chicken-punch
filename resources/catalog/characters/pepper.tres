@@ -12,3 +12,7 @@ starting_weapon = "fire"
 sprite_sheet = ExtResource("2_dnxxf")
 unlock_gold = 40
 unlock_quest = "survive_3"
+ability_name = "Hot Wings"
+ability_description = "A burst of flame around you that leaves a ring of burning ground."
+ability_cooldown = 8.0
+passive_description = "+25% fire damage, including Hot Wings."

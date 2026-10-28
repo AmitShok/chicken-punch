@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Treasure/GoldCoin.png" id="1_3kisy"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_greed.png" id="2_afb8u"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_pbjj6"]
+
+[resource]
+script = ExtResource("3_pbjj6")
+key = "greed"
+display_name = "Golden Harvest"
+description = "+12% coins from pickups per level. Evolves Parrot Squadron."
+art = ExtResource("1_3kisy")
+icon = ExtResource("2_afb8u")
+unlock_quest = "chests_10"
+unlock_gold = 40

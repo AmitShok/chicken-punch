@@ -7,7 +7,7 @@
 script = ExtResource("2_nvvx6")
 key = "silk"
 display_name = "Wind Charm"
-description = "Dash recharges 15% faster per stack."
+description = "Your ability recharges 15% faster per stack."
 rarity = 1
 icon = ExtResource("1_s6lhw")
 unlock_quest = "dash_100"

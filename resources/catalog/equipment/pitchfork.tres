@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Weapons/Fork/Sprite.png" id="1_hjyqb"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_pitchfork.png" id="2_mnmbl"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_6642e"]
+
+[resource]
+script = ExtResource("3_6642e")
+key = "pitchfork"
+display_name = "Pitchfork"
+description = "Jab in the direction you face, hitting everything in a narrow line. A second jab joins at rank 6."
+kind = 0
+art = ExtResource("1_hjyqb")
+icon = ExtResource("1_hjyqb")
+unlock_quest = "survive_5"
+unlock_gold = 80
+evolution_tome = "thorns"
+evolution_name = "Devil's Hayfork"
+evolution_effect = "Two extra jabs around you and 50% longer reach."
+evolved_icon = ExtResource("2_mnmbl")

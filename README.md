@@ -42,6 +42,7 @@ godot --headless --path . --script res://tests/expansion_test.gd
 godot --headless --path . --script res://tests/music_map_test.gd
 godot --headless --path . --script res://tests/catalog_test.gd
 godot --headless --path . --script res://tests/quest_test.gd
+godot --headless --path . --script res://tests/content_test.gd
 godot --headless --path . --script res://tools/balance/boss_race.gd
 godot --path . --script res://tools/capture/capture_menu.gd -- <existing-output-directory>
 ```

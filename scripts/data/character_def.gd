@@ -18,3 +18,11 @@ extends Resource
 @export var unlock_gold := 0
 ## Quest id from Data.QUESTS that must be complete before it can be bought.
 @export var unlock_quest := ""
+
+@export_group("Ability")
+## Name shown on the HUD, e.g. "Flutter Dash". Behaviour lives in abilities.gd.
+@export var ability_name := ""
+@export_multiline var ability_description := ""
+## Seconds between uses, before Wind Charm.
+@export var ability_cooldown := 3.0
+@export_multiline var passive_description := ""

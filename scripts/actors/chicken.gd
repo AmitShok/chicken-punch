@@ -10,8 +10,12 @@ var current_xp = 0
 var max_xp = 12
 var level = 1
 var invulnerability = 0.0
-var dash_cooldown = 0.0
-var dash_time = 0.0
+var ability_cooldown = 0.0
+# A lunge moves the player at a fixed speed, then calls its landing callback.
+var lunge_time = 0.0
+var lunge_speed = 360.0
+var lunge_direction = Vector2.RIGHT
+var lunge_landing: Callable = Callable()
 var facing = Vector2.RIGHT
 var run: Node
 var character_key = "nugget"
@@ -33,18 +37,19 @@ func _physics_process(delta):
 	if is_dead:
 		return
 	invulnerability = maxf(0, invulnerability - delta)
-	dash_cooldown = maxf(0, dash_cooldown - delta)
-	dash_time = maxf(0, dash_time - delta)
+	ability_cooldown = maxf(0, ability_cooldown - delta)
+	var lunging = lunge_time > 0
+	lunge_time = maxf(0, lunge_time - delta)
+	if lunging and lunge_time <= 0 and lunge_landing.is_valid():
+		var landing = lunge_landing
+		lunge_landing = Callable()
+		landing.call()
 	var mov = Input.get_vector("left", "right", "up", "down")
 	if mov.length() > 0.1:
 		facing = mov
-	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0:
-		dash_time = 0.18
-		dash_cooldown = run.dash_recharge() if is_instance_valid(run) else 3.0
-		invulnerability = 0.3
-		if is_instance_valid(run):
-			run.on_dash()
-	velocity = (facing * 360.0) if dash_time > 0 else mov * movement_speed
+	if Input.is_action_just_pressed("dash") and ability_cooldown <= 0 and is_instance_valid(run):
+		run.abilities.use()
+	velocity = (lunge_direction * lunge_speed) if lunge_time > 0 else mov * movement_speed
 	move_and_slide()
 	if is_instance_valid(run):
 		global_position = global_position.clamp(run.arena_bounds.position, run.arena_bounds.end)
@@ -63,9 +68,14 @@ func gain_xp(amount: int):
 		if is_instance_valid(run):
 			run.pending_levels += 1
 
-func take_damage(amount: float):
+# Returns true when the hit landed, so attackers can trigger thorns.
+func take_damage(amount: float) -> bool:
 	if is_dead or invulnerability > 0:
-		return
+		return false
+	if is_instance_valid(run) and run.rng.randf() < run.dodge_chance():
+		invulnerability = 0.4
+		run.floating_text(global_position, "Dodge", Color("bfe8ff"))
+		return false
 	var armor = run.armor_value() if is_instance_valid(run) else 0
 	hp = maxf(0, hp - maxf(1, amount - armor))
 	invulnerability = 0.8
@@ -77,6 +87,7 @@ func take_damage(amount: float):
 		is_dead = true
 		animated_sprite_2d.play("death")
 		run.finish(false)
+	return true
 
 func _on_hurt_box_hurt(damage, _angle):
 	take_damage(damage)
@@ -130,3 +141,9 @@ func update_character_animation():
 		animated_sprite_2d.position.y = 3 if walking else 5
 	elif character_key != "nugget":
 		animated_sprite_2d.position.y = 2
+
+func lunge(direction: Vector2, speed: float, time: float, landing: Callable = Callable()):
+	lunge_direction = direction.normalized() if direction.length() > 0.01 else facing.normalized()
+	lunge_speed = speed
+	lunge_time = time
+	lunge_landing = landing

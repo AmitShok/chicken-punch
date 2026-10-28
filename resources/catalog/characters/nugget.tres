@@ -9,3 +9,6 @@ display_name = "Nugget"
 flavor = "The original coop defender. A steady spread of eggs."
 starting_weapon = "egg"
 cell = Vector2i(20, 21)
+ability_name = "Flutter Dash"
+ability_description = "A quick burst of speed with a moment of invulnerability."
+passive_description = "+10% experience."

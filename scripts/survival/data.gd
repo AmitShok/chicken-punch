@@ -103,7 +103,7 @@ const SYNERGIES = {
 	"steam": ["Steam Engine", "fire", "frost", false, "Fire hitting a chilled enemy consumes the slow and erupts into a steam blast. 3s cooldown per enemy."],
 	"reaper": ["Reaper's Feast", "sickle", "blood_seed", true, "A returning sickle that hits enemies heals 1 HP per hit, up to 2, multiplied by Crimson Seed stacks."],
 	"cluster": ["Cluster Nest", "shell", "powder", true, "Shell explosions release six piercing fragments, each dealing 20% of the shell's damage."],
-	"wake": ["Iron Wake", "orbit", "bead", true, "Dashing releases a protective blast for 12 damage per Iron Bead stack, scaled by damage bonuses."]
+	"wake": ["Iron Wake", "orbit", "bead", true, "Using your ability releases a protective blast for 12 damage per Iron Bead stack, scaled by damage bonuses."]
 }
 # Two evolved weapons, two maxed matching tomes, a three-stack item, two guardian kills, then a chest.
 const ASCENSIONS = {
@@ -167,13 +167,15 @@ const QUESTS = {
 	"kills_2500": ["Defeat 2,500 enemies in total", "kills", 2500],
 	"kills_5000": ["Defeat 5,000 enemies in total", "kills", 5000],
 	"chests_10": ["Open 10 chests in total", "chests", 10],
+	"chests_25": ["Open 25 chests in total", "chests", 25],
+	"ability_50": ["Use your ability 50 times in one run", "best_dashes", 50],
 	"max_rank": ["Raise any weapon to rank 10 in one run", "best_rank", 10],
 	"guardian_1": ["Defeat a guardian", "best_guardians", 1],
 	"guardian_2": ["Defeat two guardians in one run", "best_guardians", 2],
 	"guardians_6": ["Defeat 6 guardians in total", "guardians", 6],
 	"evolve": ["Evolve a weapon", "evolutions", 1],
 	"evolve_fire": ["Evolve Hot Foot into Phoenix Trail", "evolved_fire", 1],
-	"dash_100": ["Dash 100 times in one run", "best_dashes", 100],
+	"dash_100": ["Use your ability 100 times in one run", "best_dashes", 100],
 	"low_hp_60": ["Spend 60 seconds below half health in one run", "best_low_hp", 60],
 	"win": ["Win a run", "wins", 1],
 	"crit_10": ["Raise Keen Eye to rank 10 in one run", "best_crit", 10],

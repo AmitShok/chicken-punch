@@ -14,7 +14,8 @@ const BUILDS = {
 	"first_win": [{"egg": 10, "shell": 10, "haste": 10, "might": 10}, {"bead": 3, "honey": 3}, ["egg"], "", 5, false],
 	"four_slot": [{"egg": 10, "shell": 10, "shuriken": 10, "frost": 10, "might": 10, "haste": 10, "area": 10, "projectile_size": 10}, {"crown": 3, "bead": 3}, ["egg", "shell", "frost"], "", 5, false],
 	"overcrit_redline": [{"thunder": 10, "frost": 10, "egg": 10, "shell": 10, "crit": 10, "duration": 10, "might": 10, "projectile_count": 10}, {"lens": 10, "berserk": 3, "crown": 3}, ["thunder", "frost", "egg"], "whiteout", 5, true],
-	"henpocalypse_roast": [{"egg": 10, "fire": 10, "shell": 10, "frost": 10, "haste": 10, "area": 10, "duration": 10, "might": 10}, {"powder": 3, "crown": 3}, ["egg", "fire", "shell"], "henpocalypse", 5, false]
+	"henpocalypse_roast": [{"egg": 10, "fire": 10, "shell": 10, "frost": 10, "haste": 10, "area": 10, "duration": 10, "might": 10}, {"powder": 3, "crown": 3}, ["egg", "fire", "shell"], "henpocalypse", 5, false],
+	"carrot_bonk": [{"carrot": 10, "parrot": 10, "pitchfork": 10, "stink": 10, "luck": 10, "crit": 10, "might": 10, "haste": 10}, {"mallet": 5, "hot_sauce": 5, "lens": 6, "anvil": 3}, ["carrot", "parrot"], "", 5, false]
 }
 
 func _initialize(): call_deferred("race")

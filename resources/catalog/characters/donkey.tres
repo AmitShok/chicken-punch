@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_2b5ik"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Donkey/SpriteSheeGreySide.png" id="2_q0h26"]
+
+[resource]
+script = ExtResource("1_2b5ik")
+key = "donkey"
+display_name = "Barnaby"
+flavor = "The stubborn farm donkey. Pitchfork in front, hooves behind."
+starting_weapon = "pitchfork"
+sprite_sheet = ExtResource("2_q0h26")
+cell = Vector2i(23, 16)
+faces_left = true
+unlock_gold = 140
+unlock_quest = "guardian_2"
+ability_name = "Buck Kick"
+ability_description = "A huge kick behind you that sends enemies flying."
+ability_cooldown = 6.0
+passive_description = "+30 max health and +10% damage."

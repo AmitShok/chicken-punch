@@ -6,9 +6,12 @@
 [ext_resource type="Resource" path="res://resources/catalog/characters/whisker.tres" id="4_efb3o"]
 [ext_resource type="Resource" path="res://resources/catalog/characters/truffle.tres" id="5_yhvle"]
 [ext_resource type="Resource" path="res://resources/catalog/characters/clover.tres" id="6_hlrmd"]
+[ext_resource type="Resource" path="res://resources/catalog/characters/frog.tres" id="7_5yhy5"]
 [ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="7_gcnfx"]
 [ext_resource type="Resource" path="res://resources/catalog/equipment/projectile_speed.tres" id="8_8llhh"]
+[ext_resource type="Resource" path="res://resources/catalog/characters/parrot.tres" id="8_qw4ut"]
 [ext_resource type="Resource" path="res://resources/catalog/equipment/projectile_count.tres" id="9_320ch"]
+[ext_resource type="Resource" path="res://resources/catalog/characters/donkey.tres" id="9_ht3ry"]
 [ext_resource type="Resource" path="res://resources/catalog/equipment/projectile_size.tres" id="10_r1bw6"]
 [ext_resource type="Resource" path="res://resources/catalog/equipment/egg.tres" id="11_oh2t0"]
 [ext_resource type="Resource" path="res://resources/catalog/equipment/shuriken.tres" id="12_x0rod"]
@@ -32,20 +35,34 @@
 [ext_resource type="Resource" path="res://resources/catalog/items/key.tres" id="30_sbk1b"]
 [ext_resource type="Resource" path="res://resources/catalog/items/clover.tres" id="31_gpg32"]
 [ext_resource type="Resource" path="res://resources/catalog/items/lens.tres" id="32_87sp7"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/pitchfork.tres" id="32_nwrta"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/carrot.tres" id="33_gb5ax"]
 [ext_resource type="Resource" path="res://resources/catalog/items/honey.tres" id="33_vxxyx"]
 [ext_resource type="Resource" path="res://resources/catalog/items/lunch.tres" id="34_2jfkv"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/stink.tres" id="34_3lqyh"]
 [ext_resource type="Resource" path="res://resources/catalog/items/magnet_stone.tres" id="35_1wcxi"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/parrot.tres" id="35_3n0xt"]
 [ext_resource type="Resource" path="res://resources/catalog/items/powder.tres" id="36_d31ng"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/luck.tres" id="36_yumt5"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/thorns.tres" id="37_kb2n3"]
 [ext_resource type="Resource" path="res://resources/catalog/items/blood_seed.tres" id="37_l446p"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/evasion.tres" id="38_2vskx"]
 [ext_resource type="Resource" path="res://resources/catalog/items/berserk.tres" id="38_auhum"]
 [ext_resource type="Resource" path="res://resources/catalog/items/silk.tres" id="39_5mvgn"]
+[ext_resource type="Resource" path="res://resources/catalog/equipment/greed.tres" id="39_cpx0i"]
 [ext_resource type="Resource" path="res://resources/catalog/items/crown.tres" id="40_t0w4k"]
 [ext_resource type="Resource" path="res://resources/catalog/items/compass.tres" id="41_q1wfn"]
 [ext_resource type="Resource" path="res://resources/catalog/items/bead.tres" id="42_kkk57"]
 [ext_resource type="Script" path="res://scripts/data/catalog.gd" id="43_vuk1g"]
+[ext_resource type="Resource" path="res://resources/catalog/items/oats.tres" id="54_7ghld"]
+[ext_resource type="Resource" path="res://resources/catalog/items/cheese.tres" id="55_sbk1b"]
+[ext_resource type="Resource" path="res://resources/catalog/items/ice_cube.tres" id="56_gpg32"]
+[ext_resource type="Resource" path="res://resources/catalog/items/hot_sauce.tres" id="57_87sp7"]
+[ext_resource type="Resource" path="res://resources/catalog/items/anvil.tres" id="58_vxxyx"]
+[ext_resource type="Resource" path="res://resources/catalog/items/mallet.tres" id="59_2jfkv"]
 
 [resource]
 script = ExtResource("43_vuk1g")
-equipment = Array[ExtResource("7_gcnfx")]([ExtResource("8_8llhh"), ExtResource("9_320ch"), ExtResource("10_r1bw6"), ExtResource("11_oh2t0"), ExtResource("12_x0rod"), ExtResource("13_84igt"), ExtResource("14_8ire3"), ExtResource("15_83k6s"), ExtResource("16_sbudh"), ExtResource("17_5gyqy"), ExtResource("18_5yhy5"), ExtResource("19_qw4ut"), ExtResource("20_ht3ry"), ExtResource("21_nwrta"), ExtResource("22_gb5ax"), ExtResource("23_3lqyh"), ExtResource("24_3n0xt"), ExtResource("25_yumt5"), ExtResource("26_kb2n3"), ExtResource("27_2vskx"), ExtResource("28_cpx0i")])
-items = Array[ExtResource("29_7ghld")]([ExtResource("30_sbk1b"), ExtResource("31_gpg32"), ExtResource("32_87sp7"), ExtResource("33_vxxyx"), ExtResource("34_2jfkv"), ExtResource("35_1wcxi"), ExtResource("36_d31ng"), ExtResource("37_l446p"), ExtResource("38_auhum"), ExtResource("39_5mvgn"), ExtResource("40_t0w4k"), ExtResource("41_q1wfn"), ExtResource("42_kkk57")])
-characters = Array[ExtResource("1_0iofi")]([ExtResource("2_0bg85"), ExtResource("3_mjwcc"), ExtResource("4_efb3o"), ExtResource("5_yhvle"), ExtResource("6_hlrmd")])
+equipment = Array[ExtResource("7_gcnfx")]([ExtResource("8_8llhh"), ExtResource("9_320ch"), ExtResource("10_r1bw6"), ExtResource("11_oh2t0"), ExtResource("12_x0rod"), ExtResource("13_84igt"), ExtResource("14_8ire3"), ExtResource("15_83k6s"), ExtResource("16_sbudh"), ExtResource("17_5gyqy"), ExtResource("18_5yhy5"), ExtResource("19_qw4ut"), ExtResource("20_ht3ry"), ExtResource("21_nwrta"), ExtResource("22_gb5ax"), ExtResource("23_3lqyh"), ExtResource("24_3n0xt"), ExtResource("25_yumt5"), ExtResource("26_kb2n3"), ExtResource("27_2vskx"), ExtResource("28_cpx0i"), ExtResource("32_nwrta"), ExtResource("33_gb5ax"), ExtResource("34_3lqyh"), ExtResource("35_3n0xt"), ExtResource("36_yumt5"), ExtResource("37_kb2n3"), ExtResource("38_2vskx"), ExtResource("39_cpx0i")])
+items = Array[ExtResource("29_7ghld")]([ExtResource("30_sbk1b"), ExtResource("31_gpg32"), ExtResource("32_87sp7"), ExtResource("33_vxxyx"), ExtResource("34_2jfkv"), ExtResource("35_1wcxi"), ExtResource("36_d31ng"), ExtResource("37_l446p"), ExtResource("38_auhum"), ExtResource("39_5mvgn"), ExtResource("40_t0w4k"), ExtResource("41_q1wfn"), ExtResource("42_kkk57"), ExtResource("54_7ghld"), ExtResource("55_sbk1b"), ExtResource("56_gpg32"), ExtResource("57_87sp7"), ExtResource("58_vxxyx"), ExtResource("59_2jfkv")])
+characters = Array[ExtResource("1_0iofi")]([ExtResource("2_0bg85"), ExtResource("3_mjwcc"), ExtResource("4_efb3o"), ExtResource("5_yhvle"), ExtResource("6_hlrmd"), ExtResource("7_5yhy5"), ExtResource("8_qw4ut"), ExtResource("9_ht3ry")])

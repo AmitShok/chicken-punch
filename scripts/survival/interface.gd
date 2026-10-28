@@ -656,7 +656,8 @@ func _process(delta):
 	xp.max_value = p.max_xp
 	xp.value = p.current_xp
 	level_text.text = "Lv %d" % p.level if compact_hud else "Lv %d  /  %d %s" % [p.level, run.kills, "kill" if run.kills == 1 else "kills"]
-	loadout.text = "Dash ready (Space)" if p.dash_cooldown <= 0 else "Dash %.1fs" % p.dash_cooldown
+	var ability = Data.character_def(p.character_key).ability_name
+	loadout.text = "%s ready (Space)" % ability if p.ability_cooldown <= 0 else "%s %.1fs" % [ability, p.ability_cooldown]
 	inventory_panel.visible = not modal_open
 	hud_refresh -= delta
 	if hud_refresh <= 0:
@@ -825,7 +826,7 @@ func show_choices():
 		skip_button.disabled = run.skips <= 0
 		skip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		actions.add_child(skip_button)
-	box.add_child(label("1 / 2 / 3 to select.  " + ("Treasure items do not use weapon or tome slots." if is_item else "Rare = +2 ranks. Epic = +3 ranks. Capped at rank 10. Banishes left: %d" % run.banishes), 14))
+	box.add_child(label("1 / 2 / 3 to select.  " + ("Treasure items do not use weapon or tome slots." if is_item else "Each pick is one rank; Rare gives 1.5x and Epic 2x its stats. Max rank 10. Banishes left: %d" % run.banishes), 14))
 	if first:
 		first.grab_focus()
 
@@ -849,7 +850,7 @@ func show_pause():
 	box.add_child(tabs)
 	add_loadout_page(tabs)
 	var stats = scroll_page(tabs, "Stats")
-	stats.add_child(label("Damage x%.2f    Critical %d%%    Armor %d    Regen %.1f/s\nPickup radius %d    Dash %.2fs    Duration x%.2f" % [run.power(), run.critical_chance() * 100, run.armor_value(), run.regeneration(), run.pickup_radius(), run.dash_recharge(), run.duration_multiplier()], 18))
+	stats.add_child(label("Damage x%.2f    Critical %d%%    Armor %d    Regen %.1f/s\nPickup radius %d    Ability %.2fs    Duration x%.2f\nDodge %d%%    Coins x%.2f" % [run.power(), run.critical_chance() * 100, run.armor_value(), run.regeneration(), run.pickup_radius(), run.ability_recharge(), run.duration_multiplier(), run.dodge_chance() * 100, run.coin_multiplier()], 18))
 	stats.add_child(label("DAMAGE DEALT  /  Actual damage, excluding overkill", 15))
 	add_damage_rows(stats)
 	add_options_pages(tabs, run.save, func():

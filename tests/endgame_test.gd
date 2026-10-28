@@ -65,7 +65,7 @@ func test():
 	before = enemy.hp
 	run.fire_damage_clock = 0
 	run.update_hazards(0.01)
-	check(is_equal_approx(before - enemy.hp, 7), "Overlapping fire damages each enemy only once per tick")
+	check(is_equal_approx(before - enemy.hp, 8), "Overlapping fire damages each enemy only once per tick")
 	for i in range(1000): run.spawn_fire_patch(Vector2(i * 5, 100))
 	check(run.hazards.size() == run.MAX_FIRE_PATCHES, "Fire population remains bounded")
 	var total = 0

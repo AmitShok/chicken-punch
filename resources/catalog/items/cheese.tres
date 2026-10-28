@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Food/Nut2.png" id="1_4bcj2"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_skiks"]
+
+[resource]
+script = ExtResource("2_skiks")
+key = "cheese"
+display_name = "Moldy Cheese"
+description = "8% chance per stack to poison on hit: 30% of that hit's damage per second for 3 seconds."
+rarity = 1
+icon = ExtResource("1_4bcj2")
+unlock_quest = "survive_5"
+unlock_gold = 60

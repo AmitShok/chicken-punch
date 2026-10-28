@@ -15,6 +15,13 @@ const MUSIC_VOLUME = -17.0
 const MUSIC_SILENT = -40.0
 const MIGHT_PER_RANK = 0.1
 const HASTE_PER_RANK = 0.95
+const RARITY_FACTORS = [1.0, 1.5, 2.0]
+var potency: Dictionary = {}
+var hero = "nugget"
+var abilities: RefCounted
+# Hold the Line makes orbiting blades spin and strike twice as fast.
+var orbit_rush = 0.0
+var stink_sprite: Sprite2D
 var music_key = ""
 var music_clock = 0.0
 var combat_grid: Dictionary = {}
@@ -63,7 +70,11 @@ var level_id = "meadow"
 var difficulty_tier = 0
 var reward_multiplier = 1.0
 var pending_levels = 0
-var ranks: Dictionary = {"egg": 1}
+# Assigning a whole new ranks table (new run, tests, tools) also resets rarity levels.
+var ranks: Dictionary = {"egg": 1}:
+	set(value):
+		ranks = value
+		potency = {}
 var evolved: Dictionary = {}
 var enemies: Array = []
 var arena_bounds = Rect2(-540, -400, 1320, 1000)
@@ -114,7 +125,9 @@ func _ready():
 		character = "nugget"
 	ranks = {Data.CHARACTERS[character][1]: 1}
 	player.configure_character(character)
-	player.max_hp += Data.training(save).heart * 10
+	hero = character
+	abilities = preload("res://scripts/survival/abilities.gd").new(self)
+	player.max_hp += Data.training(save).heart * 10 + {"truffle": 20, "donkey": 30}.get(character, 0)
 	player.hp = player.max_hp
 	if get_tree().has_meta("difficulty"):
 		difficulty = get_tree().get_meta("difficulty")
@@ -232,6 +245,7 @@ func _physics_process(delta):
 	attack_weapons()
 	arsenal.tick(delta)
 	update_orbits(delta)
+	update_stink_aura(delta)
 	update_hazards(delta)
 	if final_boss_dead:
 		finish(true)
@@ -286,10 +300,10 @@ func spawn_enemy(type: String, champion: bool = false):
 	return enemy
 
 func power() -> float:
-	return 1.0 + ranks.get("might", 0) * MIGHT_PER_RANK + Data.training(save).power * 0.05 + (items.get("berserk", 0) * 0.25 if player.hp < player.max_hp * 0.5 else 0.0)
+	return 1.0 + level("might") * MIGHT_PER_RANK + Data.training(save).power * 0.05 + (0.1 if hero == "donkey" else 0.0) + (items.get("berserk", 0) * 0.25 if player.hp < player.max_hp * 0.5 else 0.0)
 
 func area_multiplier() -> float:
-	return 1.0 + ranks.get("area", 0) * 0.18
+	return 1.0 + level("area") * 0.18 + (0.15 if hero == "clover" else 0.0)
 
 func nearest_enemy():
 	if target_scan_clock > 0 and is_instance_valid(cached_target) and not cached_target.dead and cached_target.global_position.distance_squared_to(player.global_position) < 115600: return cached_target
@@ -323,7 +337,7 @@ func attack_weapons():
 		for i in range(count):
 			var angle = (i - (count - 1) / 2.0) * 0.14
 			var shot = make_shot(player.global_position, dir.rotated(angle), key)
-			shot.damage = (10 + rank * 4) * power()
+			shot.damage = ((13 if key == "egg" else 10) + level(key) * 4) * power()
 			shot.pierce = 1 if key == "egg" else 2 + rank
 			if key == "egg" and evolved.has(key):
 				shot.splash = 30 * area_multiplier() * weapon_size_multiplier() * (1.8 if ascension == "henpocalypse" else 1.0)
@@ -359,9 +373,9 @@ func update_fire_trail():
 
 func spawn_fire_patch(pos: Vector2):
 	cooldowns.fire = fire_spacing() / 100.0
-	var fire_rank = ranks.get("fire", 0)
-	var life = (2.0 + fire_rank * 0.5) * duration_multiplier()
-	var damage = (4 + fire_rank * 3) * power()
+	var fire_level = level("fire")
+	var life = (2.0 + fire_level * 0.5) * duration_multiplier()
+	var damage = (5 + fire_level * 3) * power()
 	# Sub-pixel piles and standing still refresh existing fire instead of multiplying DPS.
 	for existing in hazards:
 		if existing.sprite.position.distance_squared_to(pos) < 16:
@@ -405,6 +419,7 @@ func make_shot(pos: Vector2, dir: Vector2, type: String):
 		shot.add_child(sprite)
 	sprite.hframes = 1
 	sprite.rotation = 0
+	sprite.flip_h = false
 	sprite.scale = Vector2.ONE
 	if type == "egg":
 		sprite.texture = load("res://assets/sprites/egg_sprite.png")
@@ -419,6 +434,14 @@ func make_shot(pos: Vector2, dir: Vector2, type: String):
 		atlas.region = Rect2(0, 0, 18, 10)
 		sprite.texture = atlas
 		sprite.rotation = dir.angle()
+	elif type == "carrot":
+		sprite.texture = load(Data.PACK + "Items/Food/SeedBig1.png")
+	elif type == "parrot":
+		var bird = AtlasTexture.new()
+		bird.atlas = load(Data.PACK + "Actor/Animals/Parrot/SpriteSheetBlue.png")
+		bird.region = Rect2(0, 0, 16, 16)
+		sprite.texture = bird
+		sprite.flip_h = dir.x < 0
 	else:
 		sprite.texture = load(Data.PACK + "FX/Projectile/" + ("Fireball.png" if type == "hostile" else "Shuriken.png"))
 		sprite.hframes = maxi(1, int(sprite.texture.get_width() / 16))
@@ -452,7 +475,8 @@ func update_orbits(delta):
 		sprite.texture = load(Data.PACK + "Items/Weapons/Sai/Sprite.png")
 		add_child(sprite)
 		orbit_sprites.append(sprite)
-	orbit_clock += delta * 2.4 * projectile_speed_multiplier() * (2 if ascension == "reaping" else 1)
+	orbit_rush = maxf(0, orbit_rush - delta)
+	orbit_clock += delta * 2.4 * projectile_speed_multiplier() * (2 if ascension == "reaping" else 1) * (2 if orbit_rush > 0 else 1)
 	for i in range(orbit_sprites.size()):
 		var angle = orbit_clock + i * TAU / count
 		var pos = player.global_position + Vector2.RIGHT.rotated(angle) * 35 * area_multiplier()
@@ -462,9 +486,9 @@ func update_orbits(delta):
 		# Both guard sprites point up; rotate their blade into the clockwise tangent.
 		orbit_sprites[i].rotation = angle + PI
 	if rank > 0 and cooldowns.orbit <= 0:
-		cooldowns.orbit = 0.22 * haste_multiplier()
+		cooldowns.orbit = 0.22 * haste_multiplier() * (0.5 if orbit_rush > 0 else 1.0)
 		for sprite in orbit_sprites:
-			blast(sprite.position, 15 * area_multiplier() * weapon_size_multiplier(), (5 + rank * 3) * power(), false, "orbit")
+			blast(sprite.position, 15 * area_multiplier() * weapon_size_multiplier(), (5 + level("orbit") * 3) * power(), false, "orbit")
 
 func update_hazards(delta):
 	fire_damage_clock -= delta
@@ -511,6 +535,9 @@ func enemy_died(enemy):
 		# Deferred explosions avoid recursive death chains inside the hit iteration.
 		powder_burst.call_deferred(enemy.global_position)
 	drop("xp", enemy.global_position, 5 if enemy.kind == "tank" else 3)
+	# Pirate Flock: evolved parrots bring back coins from their kills.
+	if enemy.last_source == "parrot" and evolved.has("parrot") and rng.randf() < 0.3:
+		drop("gold", enemy.global_position + Vector2(6, 0), 1)
 	if enemy.elite:
 		drop("chest", enemy.global_position, 0)
 		coins += 10
@@ -568,8 +595,8 @@ func drop(type: String, pos: Vector2, amount: int):
 func collect(item):
 	play_sound("pickup")
 	match item.kind:
-		"xp": player.gain_xp(maxi(1, roundi(item.value * (1 + ranks.get("magnet", 0) * 0.1 + items.get("compass", 0) * 0.12))))
-		"gold": coins += item.value
+		"xp": player.gain_xp(maxi(1, roundi(item.value * (1 + level("magnet") * 0.1 + items.get("compass", 0) * 0.12 + (0.1 if hero == "nugget" else 0.0)))))
+		"gold": coins += roundi(item.value * coin_multiplier())
 		"heal": player.hp = minf(player.max_hp, player.hp + item.value)
 		"magnet":
 			for pickup in get_tree().get_nodes_in_group("run_pickups"):
@@ -618,7 +645,7 @@ func eligible_upgrades() -> Array:
 
 func roll_rarity() -> int:
 	var roll = rng.randf()
-	var luck = items.get("clover", 0) * 0.06
+	var luck = items.get("clover", 0) * 0.06 + level("luck") * 0.04
 	if roll < 0.05 + luck * 0.25:
 		return 2
 	if roll < 0.30 + luck:
@@ -658,7 +685,7 @@ func show_treasure():
 		var total = 0.0
 		for key in pool:
 			var weight = [6.0, 3.0, 1.0][Data.ITEMS[key][3]]
-			weight *= 1 + items.get("clover", 0) * 0.25 if Data.ITEMS[key][3] > 0 else 1.0
+			weight *= 1 + items.get("clover", 0) * 0.25 + level("luck") * 0.15 if Data.ITEMS[key][3] > 0 else 1.0
 			weights.append(weight)
 			total += weight
 		var roll = rng.randf() * total
@@ -677,7 +704,17 @@ func show_treasure():
 	get_tree().paused = true
 
 func offered_rank(key: String) -> int:
-	return mini(Data.MAX_RANK, ranks.get(key, 0) + 1 + offer_rarities.get(key, 0))
+	return mini(Data.MAX_RANK, ranks.get(key, 0) + 1)
+
+# Stat strength one pick adds: Megabonk-style rarity factors, plus Rusty Anvil on weapons.
+func offered_gain(key: String) -> float:
+	var gain = RARITY_FACTORS[offer_rarities.get(key, 0)]
+	if key in Data.WEAPONS: gain += items.get("anvil", 0) * 0.25
+	return gain
+
+# A key's stat level: picks weighted by rarity. Falls back to rank when set directly.
+func level(key: String) -> float:
+	return potency.get(key, float(ranks.get(key, 0)))
 
 func choose_upgrade(key: String):
 	if not offers.has(key):
@@ -693,15 +730,20 @@ func choose_upgrade(key: String):
 		coins += maxi(15, last_chest_paid) if offer_kind == "item" else 15
 	elif offer_kind == "item":
 		items[key] = mini(Data.MAX_ITEM_LEVEL, items.get(key, 0) + 1)
+		if key == "oats":
+			player.max_hp += 10
+			player.hp = minf(player.max_hp, player.hp + 10)
 		ui.announce(Data.ITEMS[key][0].to_upper(), "Level %d / 10  |  %s" % [items[key], Data.ITEMS[key][1]])
 	else:
-		var old_rank = ranks.get(key, 0)
+		# Every pick is one level; rarity makes that level's stats stronger.
+		var gain_level = offered_gain(key)
+		potency[key] = level(key) + gain_level
 		ranks[key] = offered_rank(key)
 		if key == "vitality":
-			var gain = (ranks[key] - old_rank) * 20
+			var gain = roundi(gain_level * 20)
 			player.max_hp += gain
 			player.hp = minf(player.max_hp, player.hp + gain)
-		player.movement_speed = 100 * (1 + ranks.get("speed", 0) * 0.08)
+		player.movement_speed = 100 * (1 + level("speed") * 0.08)
 	if offer_kind == "item":
 		pending_treasures = maxi(0, pending_treasures - 1)
 	else:
@@ -830,10 +872,10 @@ func storm_target_count(rank: int = -1) -> int:
 	return rank + projectile_bonus() + (3 if evolved.has("thunder") else 0) + (12 if ascension == "whiteout" else 0)
 
 func duration_multiplier() -> float:
-	return 1.0 + ranks.get("duration", 0) * 0.2
+	return 1.0 + level("duration") * 0.2
 
 func critical_chance() -> float:
-	return ranks.get("crit", 0) * 0.08 + items.get("lens", 0) * 0.08
+	return level("crit") * 0.08 + items.get("lens", 0) * 0.08 + (0.1 if hero == "whisker" else 0.0)
 
 func critical_tier(roll: float) -> int:
 	var chance = critical_chance()
@@ -843,16 +885,32 @@ func slow_roast_ready() -> bool:
 	return evolved.has("fire") and items.get("powder", 0) >= 3 and ranks.get("duration", 0) >= 5
 
 func pickup_radius() -> float:
-	return 45.0 + ranks.get("magnet", 0) * 30 + items.get("magnet_stone", 0) * 25
+	return 45.0 + level("magnet") * 30 + items.get("magnet_stone", 0) * 25
 
 func armor_value() -> int:
-	return ranks.get("armor", 0) + items.get("bead", 0)
+	return roundi(level("armor")) + items.get("bead", 0) + (1 if hero == "truffle" else 0)
 
 func regeneration() -> float:
-	return ranks.get("regen", 0) * 0.4 + items.get("honey", 0) * 0.3
+	return level("regen") * 0.4 + items.get("honey", 0) * 0.3 + (0.5 if hero == "frog" else 0.0)
 
-func dash_recharge() -> float:
-	return 3.0 * pow(0.85, items.get("silk", 0))
+func ability_recharge() -> float:
+	return abilities.cooldown()
+
+# Evasion tome: a chance to ignore a hit entirely, capped at 40%.
+func dodge_chance() -> float:
+	return minf(0.4, level("evasion") * 0.04)
+
+# Greed tome and the parrot's passive raise run coin income.
+func coin_multiplier() -> float:
+	return 1.0 + level("greed") * 0.12 + (0.25 if hero == "parrot" else 0.0)
+
+func stink_radius() -> float:
+	return (40 + level("stink") * 2) * area_multiplier() * weapon_size_multiplier() * (1.5 if evolved.has("stink") else 1.0)
+
+# Thorns tome: enemies that land a hit take damage back.
+func on_player_struck(enemy: Node):
+	if level("thorns") > 0 and is_instance_valid(enemy) and not enemy.dead:
+		deal_damage(enemy, (8 + level("thorns") * 6) * power(), player.global_position.direction_to(enemy.global_position), "thorns")
 
 func deal_damage(enemy: Node, amount: float, direction: Vector2, source: String):
 	if not is_instance_valid(enemy) or enemy.dead:
@@ -872,11 +930,26 @@ func deal_damage(enemy: Node, amount: float, direction: Vector2, source: String)
 		enemy.roast_time = 2.0 * duration_multiplier()
 	elif source in Data.WEAPONS and enemy.roast_time > 0:
 		amount *= 1.0 + enemy.roast_stacks * 0.08
-	var tier = critical_tier(rng.randf())
+	if hero == "pepper" and source in ["fire", "hotwings"]:
+		amount *= 1.25
+	# Golden Carrot: evolved Carrot Cannon shots crit far more often.
+	var tier = critical_tier(rng.randf() - (0.25 if source == "carrot" and evolved.has("carrot") else 0.0))
 	var critical = tier > 0
-	amount *= pow(2.0, tier)
+	# Hot Sauce raises the critical multiplier itself, so it compounds with overcrits.
+	amount *= pow(2.0 + items.get("hot_sauce", 0) * 0.25, tier)
 	if tier >= 2 and items.get("berserk", 0) >= 3 and player.hp < player.max_hp * 0.5:
 		amount *= 2.0
+	# On-hit procs skip damage-over-time ticks so they never chain into themselves.
+	if not source in ["poison", "thorns"]:
+		if rng.randf() < items.get("mallet", 0) * 0.02:
+			amount *= 20.0
+			floating_text(enemy.global_position + Vector2(0, -10), "BONK!", Color("ffd36b"))
+		if rng.randf() < items.get("ice_cube", 0) * 0.03:
+			enemy.apply_slow(1.2, 0.0)
+		if rng.randf() < items.get("cheese", 0) * 0.08:
+			enemy.poison_time = 3.0
+			enemy.poison_dps = maxf(enemy.poison_dps if enemy.poison_time > 0 else 0.0, amount * 0.3)
+	enemy.last_source = source
 	var actual = minf(enemy.hp, amount)
 	damage_totals[source] = damage_totals.get(source, 0.0) + actual
 	enemy.take_damage(amount, direction, 0.08 if source in ["sickle", "orbit"] else 0.16)
@@ -915,30 +988,41 @@ func effect(pos: Vector2, path: String, cell: Vector2i, duration: float, size: f
 	tween.tween_callback(sprite.queue_free)
 
 func base_upgrade_preview(key: String) -> String:
-	var before = ranks.get(key, 0)
-	var after = offered_rank(key)
+	# Levels (b, a) carry rarity and size stats; ranks (rb, ra) drive counts.
+	var b = level(key)
+	var a = b + offered_gain(key)
+	var rb = ranks.get(key, 0)
+	var ra = offered_rank(key)
 	match key:
-		"projectile_speed": return "Speed  +%d%% > +%d%%" % [before * 20, after * 20]
-		"projectile_count": return "Extra projectiles  +%d > +%d\nOne per two ranks" % [before / 2, after / 2]
-		"projectile_size": return "Size  +%d%% > +%d%%" % [before * 20, after * 20]
-		"egg": return "Eggs  %d > %d\nDamage  %d > %d" % [0 if before == 0 else 1 + before / 2, 1 + after / 2, 10 + before * 4, 10 + after * 4]
-		"shuriken": return "Blades  %d > %d\nPierce  %d > %d" % [0 if before == 0 else before + 2, after + 2, before + 2, after + 2]
-		"thunder": return "Targets  %d > %d\nDamage  %d > %d" % [storm_target_count(before), storm_target_count(after), 14 + before * 6, 14 + after * 6]
-		"frost": return "Pierce  %d > %d\nDamage  %d > %d" % [before + 2, after + 2, 9 + before * 4, 9 + after * 4]
-		"sickle": return "Damage  %d > %d\nHits on the return trip" % [14 + before * 6, 14 + after * 6]
-		"shell": return "Damage  %d > %d\nBlast radius  %d > %d" % [22 + before * 9, 22 + after * 9, 26 + before * 3, 26 + after * 3]
-		"fire": return "Damage / tick  %d > %d\nDuration  %.1fs > %.1fs" % [4 + before * 3, 4 + after * 3, 2 + before * 0.5, 2 + after * 0.5]
-		"orbit": return "Blades  %d > %d\nDamage  %d > %d" % [0 if before == 0 else 1 + before / 2, 1 + after / 2, 5 + before * 3, 5 + after * 3]
-		"might": return "Damage bonus  +%d%% > +%d%%" % [before * 10, after * 10]
-		"haste": return "Cooldown  %d%% > %d%%" % [roundi(pow(HASTE_PER_RANK, before) * 100), roundi(pow(HASTE_PER_RANK, after) * 100)]
-		"area": return "Area bonus  +%d%% > +%d%%" % [before * 18, after * 18]
-		"speed": return "Speed bonus  +%d%% > +%d%%" % [before * 8, after * 8]
-		"armor": return "Armor  +%d > +%d" % [before, after]
-		"magnet": return "Pickup radius  +%d > +%d\nXP bonus  +%d%% > +%d%%" % [before * 30, after * 30, before * 10, after * 10]
-		"vitality": return "Max health  +%d > +%d\nHeal %d now" % [before * 20, after * 20, (after - before) * 20]
-		"regen": return "Health / sec  +%.1f > +%.1f" % [before * 0.4, after * 0.4]
-		"crit": return "Critical chance  +%d%% > +%d%%" % [before * 8, after * 8]
-		"duration": return "Fire / slow duration  +%d%% > +%d%%" % [before * 20, after * 20]
+		"projectile_speed": return "Speed  +%d%% > +%d%%" % [b * 20, a * 20]
+		"projectile_count": return "Extra projectiles  +%d > +%d\nOne per two levels" % [int(b / 2), int(a / 2)]
+		"projectile_size": return "Size  +%d%% > +%d%%" % [b * 20, a * 20]
+		"egg": return "Eggs  %d > %d\nDamage  %d > %d" % [0 if rb == 0 else 1 + rb / 2, 1 + ra / 2, 13 + b * 4, 13 + a * 4]
+		"shuriken": return "Blades  %d > %d\nDamage  %d > %d" % [0 if rb == 0 else rb + 2, ra + 2, 10 + b * 4, 10 + a * 4]
+		"thunder": return "Targets  %d > %d\nDamage  %d > %d" % [storm_target_count(rb), storm_target_count(ra), 14 + b * 6, 14 + a * 6]
+		"frost": return "Shards  %d > %d\nDamage  %d > %d" % [0 if rb == 0 else 1 + rb / 2, 1 + ra / 2, 9 + b * 4, 9 + a * 4]
+		"sickle": return "Damage  %d > %d\nHits on the return trip" % [14 + b * 6, 14 + a * 6]
+		"shell": return "Damage  %d > %d\nBlast radius  %d > %d" % [22 + b * 9, 22 + a * 9, 26 + b * 3, 26 + a * 3]
+		"fire": return "Damage / tick  %d > %d\nDuration  %.1fs > %.1fs" % [5 + b * 3, 5 + a * 3, 2 + b * 0.5, 2 + a * 0.5]
+		"orbit": return "Blades  %d > %d\nDamage  %d > %d" % [0 if rb == 0 else 1 + rb / 2, 1 + ra / 2, 5 + b * 3, 5 + a * 3]
+		"pitchfork": return "Jabs  %d > %d\nDamage  %d > %d" % [0 if rb == 0 else (2 if rb >= 6 else 1), 2 if ra >= 6 else 1, 20 + b * 9, 20 + a * 9]
+		"carrot": return "Damage  %.0f > %.0f\nFires every 0.30s" % [12 + b * 6, 12 + a * 6]
+		"stink": return "Damage / tick  %.0f > %.0f\nRadius  %d > %d" % [5 + b * 2.5, 5 + a * 2.5, 40 + b * 2, 40 + a * 2]
+		"parrot": return "Parrots  %d > %d\nDamage  %d > %d" % [0 if rb == 0 else 1 + rb / 3, 1 + ra / 3, 12 + b * 5, 12 + a * 5]
+		"might": return "Damage bonus  +%d%% > +%d%%" % [b * 10, a * 10]
+		"haste": return "Cooldown  %d%% > %d%%" % [roundi(pow(HASTE_PER_RANK, b) * 100), roundi(pow(HASTE_PER_RANK, a) * 100)]
+		"area": return "Area bonus  +%d%% > +%d%%" % [b * 18, a * 18]
+		"speed": return "Speed bonus  +%d%% > +%d%%" % [b * 8, a * 8]
+		"armor": return "Armor  +%d > +%d" % [roundi(b), roundi(a)]
+		"magnet": return "Pickup radius  +%d > +%d\nXP bonus  +%d%% > +%d%%" % [b * 30, a * 30, b * 10, a * 10]
+		"vitality": return "Max health  +%d > +%d\nHeal %d now" % [b * 20, a * 20, roundi((a - b) * 20)]
+		"regen": return "Health / sec  +%.1f > +%.1f" % [b * 0.4, a * 0.4]
+		"crit": return "Critical chance  +%d%% > +%d%%" % [b * 8, a * 8]
+		"duration": return "Fire / slow duration  +%d%% > +%d%%" % [b * 20, a * 20]
+		"luck": return "Rare / epic odds  +%d%% > +%d%%" % [b * 4, a * 4]
+		"thorns": return "Thorns damage  %d > %d" % [0 if b == 0 else 8 + b * 6, 8 + a * 6]
+		"evasion": return "Dodge chance  %d%% > %d%%" % [minf(40, b * 4), minf(40, a * 4)]
+		"greed": return "Coins  +%d%% > +%d%%" % [b * 12, a * 12]
 	return ""
 
 func synergy_active(key: String) -> bool:
@@ -968,9 +1052,8 @@ func complete_sickle_return(hits: int):
 		player.hp = minf(player.max_hp, player.hp + healing)
 		floating_text(player.global_position, "+%d" % healing, Color("8fe0bc"))
 
-func on_dash():
+func on_ability():
 	dashes += 1
-	play_sound("dash")
 	if synergy_active("wake"):
 		blast(player.global_position, 45 * area_multiplier(), 12 * items.get("bead", 0) * power(), true, "wake")
 
@@ -1056,17 +1139,17 @@ func ascension_progress(key: String) -> String:
 	return "\n".join(lines)
 
 func haste_multiplier() -> float:
-	return pow(HASTE_PER_RANK, ranks.get("haste", 0))
+	return pow(HASTE_PER_RANK, level("haste"))
 
 func projectile_bonus() -> int:
 	# One extra projectile per two ranks: a strong tome, not a free doubling.
-	return clampi(ranks.get("projectile_count", 0), 0, Data.MAX_RANK) / 2
+	return int(level("projectile_count") / 2.0)
 
 func projectile_speed_multiplier() -> float:
-	return 1.0 + ranks.get("projectile_speed", 0) * 0.2
+	return 1.0 + level("projectile_speed") * 0.2
 
 func weapon_size_multiplier() -> float:
-	return 1.0 + ranks.get("projectile_size", 0) * 0.2
+	return 1.0 + level("projectile_size") * 0.2
 
 func chest_price() -> int:
 	# A shorter-run economy: 30, 45, 60...; only paid openings advance it.
@@ -1154,3 +1237,22 @@ func recycle_shot(shot: Node2D):
 		return
 	projectile_reserve.add_child(shot)
 	projectile_pool.append(shot)
+
+# Stink Cloud's visible aura: the pack's aura effect, tinted and sized to the damage radius.
+func update_stink_aura(delta: float):
+	var active = ranks.get("stink", 0) > 0
+	if not active:
+		if is_instance_valid(stink_sprite): stink_sprite.hide()
+		return
+	if not is_instance_valid(stink_sprite):
+		stink_sprite = Sprite2D.new()
+		stink_sprite.texture = load(Data.PACK + "FX/Magic/Aura/SpriteSheet.png")
+		stink_sprite.hframes = 5
+		stink_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# On the ground layer it draws above the tiles and decoration, below every actor.
+		get_node("Ground layer").add_child(stink_sprite)
+	stink_sprite.show()
+	stink_sprite.modulate = Color(0.55, 0.85, 0.35, 0.32) if not evolved.has("stink") else Color(0.7, 0.45, 0.85, 0.36)
+	stink_sprite.global_position = player.global_position
+	stink_sprite.scale = Vector2.ONE * stink_radius() / 12.0
+	stink_sprite.frame = int(elapsed * 8) % 5

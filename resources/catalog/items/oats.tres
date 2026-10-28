@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Food/SeedLarge.png" id="1_oqad7"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_ojgko"]
+
+[resource]
+script = ExtResource("2_ojgko")
+key = "oats"
+display_name = "Oat Sack"
+description = "+10 max health per stack."
+icon = ExtResource("1_oqad7")
+unlock_quest = "kills_500"

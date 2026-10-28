@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Coop/stink.png" id="1_lteha"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_stink.png" id="2_hpk6x"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_rron7"]
+
+[resource]
+script = ExtResource("3_rron7")
+key = "stink"
+display_name = "Stink Cloud"
+description = "A foul aura that damages and slows everything around you."
+kind = 0
+art = ExtResource("1_lteha")
+icon = ExtResource("1_lteha")
+unlock_quest = "kills_2500"
+unlock_gold = 90
+evolution_tome = "evasion"
+evolution_name = "Miasma"
+evolution_effect = "Half again as wide, and slows enemies by 50%."
+evolved_icon = ExtResource("2_hpk6x")
