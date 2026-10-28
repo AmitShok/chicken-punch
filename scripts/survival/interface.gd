@@ -25,8 +25,11 @@ var health: ProgressBar
 var xp: ProgressBar
 var loadout: Label
 var compass: Control
-var banner: Label
+var banner: PanelContainer
+var banner_title: Label
+var banner_subtitle: Label
 var banner_time = 0.0
+var chest_plate: PanelContainer
 var modal: Control
 var modal_open = false
 var mode = ""
@@ -324,72 +327,211 @@ func _ready():
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.theme = skin()
 	add_child(root)
-	timer_label = overlay("00:00", Vector2(380, 10), Vector2(200, 42), 32)
-	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Top centre: the run clock on a small banner, the guardian's health beneath it.
+	var top = anchored_box(Control.PRESET_CENTER_TOP, Vector2(0, 6))
+	var clock_plate = banner_plate(6)
+	clock_plate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	top.add_child(clock_plate)
+	var clock_row = HBoxContainer.new()
+	clock_row.add_theme_constant_override("separation", 8)
+	clock_plate.add_child(clock_row)
 	clock_icon = symbol("clock", 24)
-	clock_icon.position = Vector2(405, 20)
-	root.add_child(clock_icon)
-	hud = overlay("", Vector2(850, 16), Vector2(90, 30), 16)
+	clock_row.add_child(clock_icon)
+	timer_label = plate_text("00:00", 32)
+	clock_row.add_child(timer_label)
+	boss_label = outlined(plate_text("", 16))
+	boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top.add_child(boss_label)
+	boss_bar = progress(Vector2(300, 12), Color("bb83f3"))
+	boss_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	top.add_child(boss_bar)
+	# Top right: coins and the next chest price in a paper wallet, then the build button.
+	var corner = anchored_box(Control.PRESET_TOP_RIGHT, Vector2(-12, 8))
+	var wallet = paper_plate()
+	corner.add_child(wallet)
+	var wallet_rows = VBoxContainer.new()
+	wallet_rows.add_theme_constant_override("separation", 0)
+	wallet.add_child(wallet_rows)
+	var coin_row = HBoxContainer.new()
+	coin_row.add_theme_constant_override("separation", 8)
+	wallet_rows.add_child(coin_row)
 	coin_icon = symbol("coin", 24)
-	coin_icon.position = Vector2(820, 18)
-	root.add_child(coin_icon)
-	hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	pause_button = button("Esc / Build", show_pause)
-	pause_button.position = Vector2(812, 52)
-	pause_button.size = Vector2(134, 36)
-	root.add_child(pause_button)
+	coin_row.add_child(coin_icon)
+	hud = plate_text("", 32)
+	coin_row.add_child(hud)
+	chest_cost_label = plate_text("", 16)
+	chest_cost_label.add_theme_color_override("font_color", MUTED)
+	wallet_rows.add_child(chest_cost_label)
+	pause_button = button("Esc  Build", show_pause)
+	pause_button.focus_mode = Control.FOCUS_NONE
+	corner.add_child(pause_button)
+	# Top left: the build in dark item slots.
 	inventory_panel = PanelContainer.new()
-	inventory_panel.position = Vector2(14, 65)
+	inventory_panel.position = Vector2(12, 8)
 	inventory_panel.custom_minimum_size = Vector2(202, 0)
 	inventory_panel.add_theme_stylebox_override("panel", paper_style("Popup01a", 10))
 	root.add_child(inventory_panel)
 	inventory_box = VBoxContainer.new()
-	inventory_box.add_theme_constant_override("separation", 6)
+	inventory_box.add_theme_constant_override("separation", 4)
 	inventory_panel.add_child(inventory_box)
 	refresh_inventory()
-	health_text = overlay("", Vector2(390, 568), Vector2(180, 20), 14)
-	health_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	health = progress(Vector2(390, 590), Vector2(180, 8), Color("e76a76"), true)
-	xp = progress(Vector2(14, 620), Vector2(932, 8), Color("75aeff"))
-	level_text = overlay("", Vector2(14, 590), Vector2(270, 26), 15)
-	loadout = overlay("", Vector2(330, 600), Vector2(300, 18), 14)
+	# Bottom centre: health and dash on one plate.
+	var vitals = anchored_box(Control.PRESET_CENTER_BOTTOM, Vector2(0, -24))
+	var vitals_plate = paper_plate()
+	vitals.add_child(vitals_plate)
+	var vitals_rows = VBoxContainer.new()
+	vitals_rows.add_theme_constant_override("separation", 2)
+	vitals_plate.add_child(vitals_rows)
+	var health_row = HBoxContainer.new()
+	health_row.add_theme_constant_override("separation", 8)
+	vitals_rows.add_child(health_row)
+	var heart = TextureRect.new()
+	heart.texture = Book.art("IconHeart01a")
+	heart.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	heart.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_row.add_child(heart)
+	health = progress(Vector2(180, 10), Color("d9505c"), true)
+	health.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	health_row.add_child(health)
+	health_text = plate_text("", 16)
+	health_text.custom_minimum_size.x = 64
+	health_row.add_child(health_text)
+	loadout = plate_text("", 16)
 	loadout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loadout.add_theme_color_override("font_color", MUTED)
+	vitals_rows.add_child(loadout)
+	# Bottom edge: experience across the screen.
+	xp = progress(Vector2(936, 10), Color("6f9fe8"))
+	xp.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	xp.offset_left = 12
+	xp.offset_right = -12
+	xp.offset_top = -18
+	xp.offset_bottom = -8
+	root.add_child(xp)
+	# Bottom left: level, kills and the layout hint.
+	var record = anchored_box(Control.PRESET_BOTTOM_LEFT, Vector2(12, -24))
+	var record_plate = paper_plate()
+	record.add_child(record_plate)
+	var record_rows = VBoxContainer.new()
+	record_rows.add_theme_constant_override("separation", 2)
+	record_plate.add_child(record_rows)
+	level_text = plate_text("", 16)
+	record_rows.add_child(level_text)
+	var hint = HBoxContainer.new()
+	hint.add_theme_constant_override("separation", 6)
+	record_rows.add_child(hint)
+	hint.add_child(key_cap("Tab"))
+	hud_hint = plate_text("", 16)
+	hud_hint.add_theme_color_override("font_color", MUTED)
+	hint.add_child(hud_hint)
 	compass = preload("res://scripts/survival/compass.gd").new()
-	compass.position = Vector2(740, 550)
-	compass.size = Vector2(210, 80)
+	compass.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	compass.offset_left = -222
+	compass.offset_top = -108
+	compass.offset_right = -12
+	compass.offset_bottom = -26
 	root.add_child(compass)
-	boss_bar = progress(Vector2(330, 86), Vector2(300, 8), Color("bb83f3"))
-	boss_label = overlay("", Vector2(320, 58), Vector2(320, 22), 15)
-	boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	banner = overlay("", Vector2(235, 128), Vector2(490, 76), 18)
-	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	chest_prompt = overlay("", Vector2(300, 500), Vector2(360, 32), 17)
-	chest_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	chest_cost_label = overlay("", Vector2(690, 18), Vector2(125, 24), 14)
-	hud_hint = overlay("Tab: compact", Vector2(14, 556), Vector2(190, 24), 14)
+	# Announcements use the same banner as menu titles.
+	var middle = anchored_box(Control.PRESET_CENTER_TOP, Vector2(0, 120))
+	banner = banner_plate(10)
+	middle.add_child(banner)
+	var banner_rows = VBoxContainer.new()
+	banner_rows.add_theme_constant_override("separation", 0)
+	banner.add_child(banner_rows)
+	banner_title = plate_text("", 32)
+	banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_rows.add_child(banner_title)
+	banner_subtitle = plate_text("", 16)
+	banner_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_subtitle.add_theme_color_override("font_color", MUTED)
+	banner_rows.add_child(banner_subtitle)
+	var prompt = anchored_box(Control.PRESET_CENTER_BOTTOM, Vector2(0, -150))
+	chest_plate = paper_plate()
+	prompt.add_child(chest_plate)
+	var prompt_row = HBoxContainer.new()
+	prompt_row.add_theme_constant_override("separation", 8)
+	chest_plate.add_child(prompt_row)
+	prompt_row.add_child(key_cap("E"))
+	chest_prompt = plate_text("", 16)
+	prompt_row.add_child(chest_prompt)
+	apply_hud_layout()
 
-func overlay(text: String, pos: Vector2, dimensions: Vector2, size: int) -> Label:
+# A VBox pinned to a screen anchor that grows away from that edge as it fills.
+func anchored_box(preset: int, offset: Vector2) -> VBoxContainer:
+	var box = VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 4)
+	root.add_child(box)
+	box.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE)
+	box.grow_horizontal = Control.GROW_DIRECTION_BOTH if preset in [Control.PRESET_CENTER_TOP, Control.PRESET_CENTER_BOTTOM] else Control.GROW_DIRECTION_BEGIN if preset in [Control.PRESET_TOP_RIGHT, Control.PRESET_BOTTOM_RIGHT] else Control.GROW_DIRECTION_END
+	box.grow_vertical = Control.GROW_DIRECTION_BEGIN if preset in [Control.PRESET_CENTER_BOTTOM, Control.PRESET_BOTTOM_LEFT, Control.PRESET_BOTTOM_RIGHT] else Control.GROW_DIRECTION_END
+	box.offset_left += offset.x
+	box.offset_right += offset.x
+	box.offset_top += offset.y
+	box.offset_bottom += offset.y
+	return box
+
+static func paper_plate() -> PanelContainer:
+	var plate = PanelContainer.new()
+	var style = paper_style("Popup01a", 8)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	plate.add_theme_stylebox_override("panel", style)
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return plate
+
+static func banner_plate(padding: int) -> PanelContainer:
+	var plate = title_banner("")
+	plate.remove_child(plate.get_child(0))
+	plate.custom_minimum_size.x = 0
+	var style: StyleBoxTexture = plate.get_theme_stylebox("panel")
+	style.content_margin_left = 30
+	style.content_margin_right = 30
+	style.content_margin_top = padding
+	style.content_margin_bottom = padding + 2
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return plate
+
+static func plate_text(text: String, size: int) -> Label:
 	var item = label(text, size)
-	item.position = pos
-	item.size = dimensions
+	item.autowrap_mode = TextServer.AUTOWRAP_OFF
 	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.add_theme_color_override("font_color", Color("fff7df"))
-	item.add_theme_color_override("font_outline_color", Color("382c25"))
-	item.add_theme_constant_override("outline_size", 4)
-	root.add_child(item)
 	return item
 
-func progress(pos: Vector2, dimensions: Vector2, color: Color, damage_feedback: bool = false) -> ProgressBar:
+static func outlined(item: Label) -> Label:
+	item.add_theme_color_override("font_color", Color("fff7df"))
+	item.add_theme_color_override("font_outline_color", Color("382c25"))
+	item.add_theme_constant_override("outline_size", 6)
+	return item
+
+static func key_cap(text: String) -> PanelContainer:
+	var cap = PanelContainer.new()
+	cap.add_theme_stylebox_override("panel", paper_style("Frame01a", 4, Color.WHITE, 3))
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cap.add_child(plate_text(text, 16))
+	return cap
+
+func progress(dimensions: Vector2, color: Color, damage_feedback: bool = false) -> ProgressBar:
 	var bar = preload("res://scripts/ui/damage_bar.gd").new() if damage_feedback else ProgressBar.new()
-	bar.position = pos
-	bar.size = dimensions
+	bar.custom_minimum_size = dimensions
 	bar.show_percentage = false
 	bar.add_theme_font_size_override("font_size", 1)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.add_theme_stylebox_override("fill", bar_style(color))
-	bar.add_theme_stylebox_override("background", bar_style(Color("263146")))
-	root.add_child(bar)
-	bar.set_deferred("size", dimensions)
+	bar.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# The pack's dark bar frame, filled with a two-tone pixel strip.
+	var frame = paper_style("Bar01a", 0, Color.WHITE, 2)
+	frame.content_margin_top = 2
+	frame.content_margin_bottom = 2
+	bar.add_theme_stylebox_override("background", frame)
+	var fill = StyleBoxFlat.new()
+	fill.bg_color = color
+	fill.border_color = color.darkened(0.3)
+	fill.border_width_bottom = 2
+	fill.expand_margin_top = -2
+	fill.expand_margin_bottom = -2
+	fill.expand_margin_left = -2
+	fill.expand_margin_right = -2
+	bar.add_theme_stylebox_override("fill", fill)
 	return bar
 
 func build_icon(key: String, is_item: bool = false, size: int = 40) -> TextureRect:
@@ -418,7 +560,7 @@ func compact_inventory():
 		var keys = run.items.keys() if group == 2 else run.ranks.keys().filter(func(key): return (key in Data.WEAPONS) == (group == 0))
 		for key in keys:
 			var badge = PanelContainer.new()
-			badge.add_theme_stylebox_override("panel", box_style(Color("fff7df"), GOLD if run.evolved.has(key) else Color("ba9f69"), 2))
+			badge.add_theme_stylebox_override("panel", paper_style("Slot01b" if run.evolved.has(key) else "Slot01a", 2, Color.WHITE, 3))
 			badge.add_child(build_icon(key, group == 2, 20))
 			var info = Data.ITEMS[key] if group == 2 else Data.UPGRADES[key]
 			badge.tooltip_text = info[0] + (" x" + str(run.items[key]) if group == 2 else " / Rank " + str(run.ranks[key])) + "\n" + info[1]
@@ -429,17 +571,11 @@ func apply_hud_layout():
 	inventory_panel.size = Vector2.ZERO
 	refresh_inventory()
 	inventory_panel.set_deferred("size", Vector2.ZERO)
-	timer_label.add_theme_font_size_override("font_size", 22 if compact_hud else 32)
-	clock_icon.position = Vector2(420 if compact_hud else 405, 17 if compact_hud else 20)
-	hud.add_theme_font_size_override("font_size", 14 if compact_hud else 16)
-	health.size = Vector2(140 if compact_hud else 180, 8)
-	health.position.x = 410 if compact_hud else 390
-	hud_hint.text = "Tab: expand" if compact_hud else "Tab: compact"
-	pause_button.text = "Esc" if compact_hud else "Esc / Build"
-	pause_button.add_theme_font_size_override("font_size", 14 if compact_hud else 17)
-	pause_button.custom_minimum_size = Vector2(48, 32) if compact_hud else Vector2(134, 38)
-	pause_button.size = pause_button.custom_minimum_size
-	pause_button.position.x = 898 if compact_hud else 812
+	timer_label.add_theme_font_size_override("font_size", 16 if compact_hud else 32)
+	hud.add_theme_font_size_override("font_size", 16 if compact_hud else 32)
+	health.custom_minimum_size.x = 140 if compact_hud else 180
+	hud_hint.text = "Expand" if compact_hud else "Compact"
+	pause_button.text = "Esc" if compact_hud else "Esc  Build"
 
 func inventory_contents(parent: VBoxContainer, detailed: bool):
 	for weapons in [true, false]:
@@ -458,7 +594,7 @@ func inventory_contents(parent: VBoxContainer, detailed: bool):
 		for i in range(maxi(0, Data.slot_limit(run.save, weapons) - count)):
 			var empty = PanelContainer.new()
 			empty.custom_minimum_size = Vector2(40, 46)
-			empty.add_theme_stylebox_override("panel", box_style(Color("e4d5ab"), Color("c4ac79"), 2))
+			empty.add_theme_stylebox_override("panel", paper_style("Slot01a", 2, Color(1, 1, 1, 0.45)))
 			row.add_child(empty)
 	var title = label("ITEMS  /  %d" % run.items.size(), 14)
 	title.add_theme_color_override("font_color", MUTED)
@@ -479,14 +615,16 @@ func inventory_contents(parent: VBoxContainer, detailed: bool):
 
 func slot(key: String, is_item: bool) -> PanelContainer:
 	var frame = PanelContainer.new()
-	var color = Data.RARITY_COLORS[Data.ITEMS[key][3]] if is_item else GOLD if run.evolved.has(key) else Color("a88d5e")
-	frame.add_theme_stylebox_override("panel", box_style(Color("fff7df"), color, 2))
+	# Dark pack slots; rarity and evolution show in the rank text colour.
+	var color = Data.RARITY_COLORS[Data.ITEMS[key][3]].lightened(0.55) if is_item else YOLK if run.evolved.has(key) else PAPER
+	frame.add_theme_stylebox_override("panel", paper_style("Slot01b" if not is_item and run.evolved.has(key) else "Slot01a", 2))
 	frame.custom_minimum_size = Vector2(40, 46)
 	var column = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 0)
 	frame.add_child(column)
 	column.add_child(build_icon(key, is_item, 28))
-	var rank = label(("x" if is_item else "Lv ") + str(run.items[key] if is_item else run.ranks[key]), 14)
+	var rank = label(("x" if is_item else "Lv") + str(run.items[key] if is_item else run.ranks[key]), 14)
+	rank.add_theme_color_override("font_color", color)
 	rank.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(rank)
@@ -506,10 +644,10 @@ func _process(delta):
 	chest_cost_label.text = "Chest cost %d" % run.chest_price()
 	chest_cost_label.visible = not compact_hud
 	var nearby_chest = run.nearest_chest(30)
-	chest_prompt.visible = nearby_chest != null and not modal_open
+	chest_plate.visible = nearby_chest != null and not modal_open
 	if nearby_chest != null:
 		var cost = 0 if nearby_chest.chest_free else run.chest_price()
-		chest_prompt.text = "E / Open  / FREE" if cost == 0 else "E / Open  / %d coins" % cost if run.coins >= cost else "%d coins needed  /  Have %d" % [cost,run.coins]
+		chest_prompt.text = "Open chest  /  FREE" if cost == 0 else "Open chest  /  %d coins" % cost if run.coins >= cost else "%d coins needed  /  Have %d" % [cost,run.coins]
 	hud.tooltip_text = "%d kills" % run.kills
 	health.motion_enabled = run.save.get("combat_feedback", true)
 	health.max_value = p.max_hp
@@ -577,7 +715,8 @@ func _unhandled_input(event):
 			run.choose_upgrade(run.offers[index])
 
 func announce(title: String, subtitle: String):
-	banner.text = title + "\n" + subtitle
+	banner_title.text = title
+	banner_subtitle.text = subtitle
 	banner_time = 4
 
 func panel(title: String, subtitle: String) -> VBoxContainer:
@@ -765,12 +904,6 @@ func close_modal():
 	modal = null
 	modal_open = false
 	mode = ""
-
-static func bar_style(color: Color) -> StyleBoxFlat:
-	var style = StyleBoxFlat.new()
-	style.bg_color = color
-	style.set_corner_radius_all(3)
-	return style
 
 func show_evolution(key: String):
 	var recipe = Data.EVOLUTIONS[key]

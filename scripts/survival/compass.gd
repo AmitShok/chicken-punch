@@ -1,31 +1,40 @@
 extends Control
+const UI = preload("res://scripts/survival/interface.gd")
+const INK = Color("3e3029")
+const RIM = Color("6b4a45")
 var bearing = 0.0
 var target_label = "No treasure"
 var target_texture: Texture2D
 var active = false
 var distance = 0
+var plate: StyleBox
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	plate = UI.paper_style("Popup01a", 0)
 func _draw():
-	draw_style_box(preload("res://scripts/survival/interface.gd").box_style(Color("49352fe6"),Color("986040"),8),Rect2(64,2,144,74))
-	var center = Vector2(38,38)
-	draw_circle(center, 33, Color("49352f"))
-	draw_circle(center, 30, Color("f4d892"))
-	draw_circle(center, 25, Color("fff3cf"))
-	for i in range(16):
-		var direction = Vector2.RIGHT.rotated(i * TAU / 16)
-		draw_line(center + direction * (22 if i % 4 == 0 else 26), center + direction * 29, Color("986040"), 2)
-	var font = ThemeDB.fallback_font
-	draw_string(font,Vector2(33,16),"N",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("49352f"))
+	draw_style_box(plate, Rect2(50, 4, size.x - 50, size.y - 8))
+	var center = Vector2(38, size.y / 2.0)
+	# A chunky pixel dial: dark rim, parchment face, notches every quarter.
+	draw_circle(center, 36, RIM)
+	draw_circle(center, 32, Color("e6c491"))
+	draw_circle(center, 28, Color("ffe7c2"))
+	for i in range(8):
+		var direction = Vector2.RIGHT.rotated(i * TAU / 8)
+		var tip = (center + direction * 28).round()
+		draw_rect(Rect2(tip - Vector2(2, 2), Vector2(4, 4)) if i % 2 == 0 else Rect2(tip - Vector2(1, 1), Vector2(2, 2)), RIM)
+	var font = UI.pixel_font()
+	draw_string(font, center + Vector2(-3, -15), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, INK)
 	if active:
 		var forward = Vector2.RIGHT.rotated(bearing)
 		var side = forward.orthogonal() * 5
-		draw_colored_polygon(PackedVector2Array([center+forward*22,center+side,center-side]),Color("bc5545"))
-		draw_colored_polygon(PackedVector2Array([center-forward*18,center+side,center-side]),Color("526a75"))
-		draw_circle(center,3,Color("986040"))
-		if target_texture: draw_texture_rect(target_texture,Rect2(80,8,24,24),false)
-	draw_string(font,Vector2(80,49),target_label,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("fff3cf"))
-	if active: draw_string(font,Vector2(80,68),str(distance)+"m",HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("f4d892"))
+		draw_colored_polygon(PackedVector2Array([center + forward * 24, center + side, center - side]), Color("c4483f"))
+		draw_colored_polygon(PackedVector2Array([center - forward * 18, center + side, center - side]), Color("5d6f7a"))
+		draw_rect(Rect2(center - Vector2(3, 3), Vector2(6, 6)), RIM)
+		if target_texture: draw_texture_rect(target_texture, Rect2(86, 14, 24, 24), false)
+	var text_x = 116 if active and target_texture else 86
+	draw_string(font, Vector2(text_x, 32), target_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, INK)
+	if active: draw_string(font, Vector2(86, 58), str(distance) + "m away", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("6a634a"))
 func track(pickup: Node, origin: Vector2):
 	active = is_instance_valid(pickup)
 	if active:

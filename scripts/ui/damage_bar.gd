@@ -27,4 +27,4 @@ func _draw():
 	if previous_ratio < 0 or trail_ratio <= previous_ratio: return
 	var start = roundf(size.x * previous_ratio)
 	var end = roundf(size.x * trail_ratio)
-	draw_rect(Rect2(start, 1, maxf(0, end - start), maxf(1, size.y - 2)), Color("f5c957"))
+	draw_rect(Rect2(start, 2, maxf(0, end - start), maxf(1, size.y - 4)), Color("f5c957"))
