@@ -20,6 +20,17 @@ func _ready():
 		if child.name != "Panel": child.hide()
 	theme = UI.skin()
 	preview = save.character
+	Data.ensure_audio_buses()
+	apply_options_audio()
+	var music = AudioStreamPlayer.new()
+	music.name = "MenuMusic"
+	music.stream = Data.music_stream("menu")
+	music.volume_db = -17
+	music.bus = "Music"
+	music.finished.connect(music.play)
+	add_child(music)
+	if DisplayServer.get_name() != "headless":
+		music.play()
 	build_menu()
 
 const PAGES = {

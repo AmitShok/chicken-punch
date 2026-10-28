@@ -36,6 +36,7 @@ Run from the project directory, replacing `godot` with your Godot executable:
 godot --headless --editor --import --quit --path .
 godot --headless --path . --script res://tests/progression_test.gd
 godot --headless --path . --script res://tests/expansion_test.gd
+godot --headless --path . --script res://tests/music_map_test.gd
 godot --path . --script res://tools/capture/capture_menu.gd -- <existing-output-directory>
 ```
 

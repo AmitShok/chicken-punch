@@ -107,6 +107,29 @@ const CHARACTER_MILESTONES = {"nugget": 0, "pepper": 60, "whisker": 120, "truffl
 # Permanent access is separate from the levels earned inside each run.
 const STARTER_EQUIPMENT = ["egg", "shuriken", "might", "haste", "vitality", "speed"]
 const STARTER_ITEMS = ["honey", "lunch", "bead"]
+# Music by phase of a run. Edit these to swap tracks; all come from the Ninja Adventure pack.
+const MUSIC = {
+	"menu": "33 - Calm Village.ogg",
+	"meadow": "35 - Adventure.ogg",
+	"orchard": "23 - Road.ogg",
+	"pasture": "37 - Dark Forest.ogg",
+	"mid": "17 - Fight.ogg",
+	"late": "28 - Tension.ogg",
+	"guardian": "34  - Fight.ogg",
+	"final": "24 - Final Area.ogg",
+	"victory": "19 - Ascension.ogg",
+	"defeat": "29 - Lament.ogg"
+}
+
+static func music_stream(key: String) -> AudioStream:
+	return load(PACK + "Audio/Musics/" + MUSIC[key])
+
+static func ensure_audio_buses():
+	for name in ["Music", "SFX"]:
+		if AudioServer.get_bus_index(name) < 0:
+			AudioServer.add_bus()
+			AudioServer.set_bus_name(AudioServer.bus_count - 1, name)
+
 const LEVELS = {
 	"meadow": {"name": "Coop Meadow", "description": "The original farm. Hedges, open grass and room to dodge.", "best": 0, "tint": Color("e6ebf0"), "pressure": 1.0},
 	"orchard": {"name": "Amber Orchard", "description": "Tree-lined lanes. More bats, closer cover and faster waves.", "best": 180, "tint": Color("ffe2b5"), "pressure": 1.12},

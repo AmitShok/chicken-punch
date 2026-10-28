@@ -11,6 +11,10 @@ const MAX_FIRE_PATCHES = 160
 const MAX_PICKUPS_PER_KIND = 96
 const MAX_IMPACT_EFFECTS = 48
 const MAX_ENEMIES = 180
+const MUSIC_VOLUME = -17.0
+const MUSIC_SILENT = -40.0
+var music_key = ""
+var music_clock = 0.0
 var combat_grid: Dictionary = {}
 var combat_grid_frame = -1
 var combat_grid_dirty = true
@@ -119,15 +123,8 @@ func _ready():
 	ui = Interface.new()
 	ui.run = self
 	add_child(ui)
-	music = AudioStreamPlayer.new()
-	music.stream = load(Data.PACK + "Audio/Musics/34  - Fight.ogg")
-	music.volume_db = -17
 	setup_audio_buses()
-	music.bus = "Music"
-	music.finished.connect(music.play)
-	add_child(music)
-	if DisplayServer.get_name() != "headless":
-		music.play()
+	play_music(level_id)
 	var clips = {
 		"hit": ["Hit & Impact/Hit1.wav", -12], "impact": ["Hit & Impact/Hit2.wav", -29], "pickup": ["Bonus/Coin.wav", -26],
 		"upgrade": ["Bonus/PowerUp1.wav", -14], "evolution": ["Bonus/PowerUp2.wav", -10],
@@ -214,6 +211,10 @@ func _physics_process(delta):
 		boss_stage += 1
 		spawn_enemy("boss", true)
 		ui.announce("GUARDIAN %d / 3" % boss_stage, "Rotating rings and aimed volleys. The horde keeps coming.")
+	music_clock -= delta
+	if music_clock <= 0:
+		music_clock = 0.5
+		play_music(music_phase())
 	for key in cooldowns:
 		cooldowns[key] -= delta
 	attack_weapons()
@@ -718,6 +719,7 @@ func finish(won: bool):
 		return
 	ended = true
 	play_sound("evolution" if won else "defeat")
+	play_music("victory" if won else "defeat")
 	gold_earned = roundi((int(elapsed / 15) + (50 if won else 0)) * reward_multiplier)
 	save.gold += gold_earned
 	save.best = maxi(save.best, int(elapsed))
@@ -939,10 +941,38 @@ func on_dash():
 		blast(player.global_position, 45 * area_multiplier(), 12 * items.get("bead", 0) * power(), true, "wake")
 
 func setup_audio_buses():
-	for name in ["Music", "SFX"]:
-		if AudioServer.get_bus_index(name) < 0:
-			AudioServer.add_bus()
-			AudioServer.set_bus_name(AudioServer.bus_count - 1, name)
+	Data.ensure_audio_buses()
+
+# Picks the track for the current phase: the level's theme, then rising
+# intensity at 3:00 and 6:00, with dedicated tracks while a guardian lives.
+func music_phase() -> String:
+	var guardian = enemies.any(func(e): return is_instance_valid(e) and not e.dead and e.boss)
+	if guardian: return "final" if boss_stage >= 3 else "guardian"
+	if elapsed >= 360: return "late"
+	if elapsed >= 180: return "mid"
+	return level_id
+
+func play_music(key: String):
+	if key == music_key: return
+	music_key = key
+	var previous = music
+	music = AudioStreamPlayer.new()
+	music.stream = Data.music_stream(key)
+	music.bus = "Music"
+	# Music keeps playing under the pause menu and result screen.
+	music.process_mode = Node.PROCESS_MODE_ALWAYS
+	music.finished.connect(music.play)
+	add_child(music)
+	if DisplayServer.get_name() == "headless":
+		if is_instance_valid(previous): previous.queue_free()
+		return
+	music.volume_db = MUSIC_SILENT
+	music.play()
+	var fade = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).set_parallel(true)
+	fade.tween_property(music, "volume_db", MUSIC_VOLUME, 1.2)
+	if is_instance_valid(previous):
+		fade.tween_property(previous, "volume_db", MUSIC_SILENT, 1.2)
+		fade.chain().tween_callback(previous.queue_free)
 
 func apply_audio_settings():
 	for entry in [["Music", "music_volume"], ["SFX", "sfx_volume"]]:

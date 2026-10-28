@@ -1,8 +1,16 @@
 extends RefCounted
 const NATURE = preload("res://assets/Ninja Adventure - Asset Pack/Backgrounds/Tilesets/TilesetNature.png")
+const GroundDetail = preload("res://scripts/world/ground_detail.gd")
 
 static func apply(run: Node2D, level: String):
-	if level == "meadow": return
+	if level != "meadow": reshape(run, level)
+	var avoid: Array = [run.player.position]
+	var scenery = run.get_node_or_null("LevelScenery")
+	if scenery:
+		for body in scenery.get_children(): avoid.append(body.position)
+	GroundDetail.decorate(run.get_node("Ground layer"), avoid, level)
+
+static func reshape(run: Node2D, level: String):
 	var ground: TileMapLayer = run.get_node("Ground layer")
 	# Reuse the original map's most common, walkable ground tile.
 	var counts = {}
