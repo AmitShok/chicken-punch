@@ -134,6 +134,8 @@ func configure_character(key: String):
 		# The ChickenPack also has jump and damage sheets: used for the dash and hits.
 		var frames: SpriteFrames = original_frames.duplicate()
 		add_strip(frames, "jump", load("res://assets/ChickenPack/SpriteSheet/ChickenJumping-Sheet.png"), Vector2(20, 21), 18, false)
+		# The pack walk is 4 frames; 10 fps gives a brisk stride at base speed.
+		frames.set_animation_speed("Walk", 10)
 		animated_sprite_2d.sprite_frames = frames
 	else:
 		var texture = load(path)
@@ -164,6 +166,8 @@ func update_character_animation():
 		animated_sprite_2d.play("takeDamage")
 	else:
 		animated_sprite_2d.play("Walk" if walking else "idle")
+	# Faster movement (Fleet Feet) quickens the stride.
+	animated_sprite_2d.speed_scale = clampf(velocity.length() / 100.0, 0.8, 1.8) if animated_sprite_2d.animation == "Walk" else 1.0
 	if absf(facing.x) > 0.1:
 		animated_sprite_2d.flip_h = (facing.x < 0) != native_faces_left
 	# Align the feet to the same ground point despite different source bounds.
@@ -212,7 +216,7 @@ func animate(delta: float):
 		lean = lunge_direction.x * 0.22
 	elif velocity.length() > 1:
 		var previous = step_phase
-		step_phase += delta * velocity.length() / 7.5
+		step_phase += delta * velocity.length() / 6.4
 		bob = -absf(sin(step_phase)) * 1.5
 		lean = clampf(velocity.x / maxf(movement_speed, 1.0), -1, 1) * 0.08
 		# A footfall each time the bob returns to the ground.
