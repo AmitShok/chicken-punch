@@ -14,7 +14,7 @@ Validation: progression, roster, expansion and dedicated feedback tests; rendere
 
 Every main-menu page is an open book: a Banner title above, bookmark tabs (Marker sprite with pack icons) along the top edge for Coop, Run, Shop, Training and Options, and a left/right page spread. The left page lists choices; the right page shows the selection's details and the primary action. The shop lists entries with Owned / price status and shows the selected entry on the right. Options lists categories on the left. In-run popups (level up, pause, chest, evolution, results) use the same banner over a book.
 
-The Banner sprite exists only in the pack's Aseprite source. `tools/art/extract_travel_book.lua` crops it unchanged into `assets/ui/travel_book/Derived`. Sliders use Bar, Fill and Handle; toggles use Toggle; keyboard focus uses the Select corner brackets; pressed list rows use FrameSelect01b.
+The Banner sprite exists only in the pack's Aseprite source. `tools/art/extract_travel_book.lua` crops it unchanged into `assets/ui/travel_book/Derived`. Sliders use Bar, Fill and Handle; toggles use Toggle at 3x (the light, lit switch means ON, the dark one OFF, and each label ends in ON or OFF); keyboard focus uses the Select corner brackets; pressed list rows use FrameSelect01b.
 
 ## HUD (October 28, 2026)
 

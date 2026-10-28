@@ -396,8 +396,13 @@ func spawn_fire_patch(pos: Vector2):
 	sprite.frame = 0
 	sprite.position = pos
 	sprite.scale = Vector2.ONE * area_multiplier() * weapon_size_multiplier() * (1.6 if evolved.has("fire") else 1)
-	if evolved.has("fire") and sprite.get_child_count() == 0:
+	if not sprite.has_node("Range"):
+		var ring = preload("res://scripts/survival/fire_range.gd").new()
+		ring.name = "Range"
+		sprite.add_child(ring)
+	if evolved.has("fire") and not sprite.has_node("Phoenix"):
 		var phoenix = Sprite2D.new()
+		phoenix.name = "Phoenix"
 		phoenix.texture = Data.icon("fire", false, true)
 		phoenix.position.y = -7
 		sprite.add_child(phoenix)
@@ -504,6 +509,9 @@ func update_hazards(delta):
 			h.sprite.queue_free()
 			hazards.remove_at(i)
 		else:
+			# The range ring fades out with the embers.
+			var ring = h.sprite.get_node_or_null("Range")
+			if ring: ring.modulate.a = clampf(h.life * 3.0, 0.0, 1.0)
 			# The pack contains twelve 8x12 frames: ignition, flame, then embers.
 			# Animation runs independently of the 0.4-second damage interval.
 			if h.life < 1.0 / 3.0:

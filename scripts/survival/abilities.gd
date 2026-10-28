@@ -3,6 +3,7 @@ extends RefCounted
 # defender's CharacterDef; the behaviour lives here, keyed by defender.
 
 const Data = preload("res://scripts/survival/data.gd")
+const DASH_TIME = 0.2
 var run: Node
 
 func _init(director: Node):
@@ -86,7 +87,8 @@ func use():
 					run.deal_damage(enemy, strength(40, 4), behind, "buck")
 			run.effect(p.global_position + behind * 30, "FX/Elemental/Explosion/SpriteSheet.png", Vector2i(40, 40), 0.3, 1.2)
 		_:
-			# Flutter Dash: a quick burst with a moment of invulnerability.
-			p.invulnerability = maxf(p.invulnerability, 0.3)
-			p.lunge(p.facing, 360, 0.18)
+			# Flutter Dash: invulnerable for the whole dash plus a short grace window,
+			# so the chicken can dash straight through the horde.
+			p.invulnerability = maxf(p.invulnerability, DASH_TIME + 0.22)
+			p.lunge(p.facing, 380, DASH_TIME)
 	run.on_ability()

@@ -65,6 +65,7 @@ func test():
 		run.ranks = {Data.CHARACTERS[key][1]: 1}
 		run.abilities.use()
 		check(is_equal_approx(run.player.ability_cooldown, def.ability_cooldown), key + " ability starts its cooldown")
+		if key == "nugget": check(run.player.invulnerability >= run.player.lunge_time + 0.2, "Flutter Dash is invulnerable for the whole dash and a grace window")
 		await step(0.5)
 		var hurt = front.hp < 5000 or back.hp < 5000 or front.slow_time > 0 or back.slow_time > 0
 		check(hurt or key in ["nugget", "clover"], key + " ability affects nearby enemies")
@@ -91,6 +92,13 @@ func test():
 	run.ranks = {"stink": 3}
 	await step(0.2)
 	check(is_instance_valid(run.stink_sprite) and run.stink_sprite.visible, "Stink Cloud shows its aura")
+	# Hot Foot patches carry a range ring the size of their burn area.
+	await fresh()
+	run.ranks = {"fire": 3}
+	run.spawn_fire_patch(Vector2(40, 40))
+	var patch = run.hazards[-1]
+	var ring = patch.sprite.get_node_or_null("Range")
+	check(ring != null and is_equal_approx(ring.RADIUS * patch.sprite.scale.x, patch.radius), "Each fire patch shows a ring matching its burn radius")
 	# Rarity raises strength, not rank.
 	await fresh()
 	run.ranks = {"egg": 1}

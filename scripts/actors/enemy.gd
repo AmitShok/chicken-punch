@@ -46,6 +46,8 @@ var poison_time = 0.0
 var poison_dps = 0.0
 var poison_clock = 0.0
 var last_source = ""
+# Monster sheets are 4x4: columns face down, left, up and right; rows are walk frames.
+var directional = false
 
 func _ready():
 	collision_layer = 4
@@ -96,16 +98,12 @@ func configure(director: Node, type: String, champion: bool = false):
 			damage = 30
 			radius = 18
 	if not animation_cache.has(path):
-		var tex = load("res://assets/Ninja Adventure - Asset Pack/" + path)
-		var frames = SpriteFrames.new()
-		for i in range(mini(2, int(tex.get_width() / frame_size.x))):
-			var atlas = AtlasTexture.new()
-			atlas.atlas = tex
-			atlas.region = Rect2(Vector2(i * frame_size.x, 0), frame_size)
-			frames.add_frame("default", atlas)
-		animation_cache[path] = frames
+		animation_cache[path] = build_frames(load("res://assets/Ninja Adventure - Asset Pack/" + path), frame_size)
 	$Sprite2D.sprite_frames = animation_cache[path]
-	$Sprite2D.play("default")
+	directional = $Sprite2D.sprite_frames.has_animation("down")
+	$Sprite2D.play("down" if directional else "default")
+	$Sprite2D.speed_scale = randf_range(0.85, 1.15)
+	$Sprite2D.frame = randi() % $Sprite2D.sprite_frames.get_frame_count($Sprite2D.animation)
 	hp *= run.difficulty * 1.25
 	if elite and not boss:
 		hp *= 5
@@ -113,6 +111,10 @@ func configure(director: Node, type: String, champion: bool = false):
 		$Sprite2D.scale = Vector2(1.5, 1.5)
 		radius = 13
 	rest_scale = $Sprite2D.scale
+	# New enemies pop in instead of appearing at full size.
+	if run.save.get("combat_feedback", true):
+		$Sprite2D.scale = rest_scale * Vector2(0.3, 0.3)
+		run.feedback.puff(global_position + Vector2(0, 4), Vector2.ZERO, Color("e8d6a6"), 0.5, 0.3)
 	base_hp = hp
 	base_damage = damage * sqrt(run.difficulty) * 1.15
 	max_hp = hp
@@ -188,7 +190,7 @@ func _physics_process(delta):
 			tangent = -tangent
 		velocity = tangent
 	move_and_slide()
-	$Sprite2D.flip_h = offset.x < 0
+	face(velocity if velocity.length() > 4 else offset)
 	if distance < radius + 7:
 		if player.take_damage(damage * run.difficulty):
 			run.on_player_struck(self)
@@ -254,6 +256,7 @@ func update_feedback(delta: float):
 	flash = maxf(0, flash - delta)
 	var motion = run.save.get("combat_feedback", true)
 	$Sprite2D.scale = $Sprite2D.scale.lerp(rest_scale, minf(1, delta * 22)) if motion else rest_scale
+	animate_body(motion)
 	if flash > 0 or previous_flash > 0:
 		hit_material = flash_materials[clampi(roundi(flash / 0.035 * 4), 0, 4)]
 		$Sprite2D.material = hit_material
@@ -262,3 +265,55 @@ func update_feedback(delta: float):
 		health_trail = maxf(0, hp / max_hp)
 	elif health_trail_delay <= 0:
 		health_trail = move_toward(health_trail, maxf(0, hp / max_hp), delta * 2.5)
+
+# Monster sheets (64x64) become four directional walk cycles; strips play in order.
+static func build_frames(tex: Texture2D, frame_size: Vector2) -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	var columns = int(tex.get_width() / frame_size.x)
+	var rows = int(tex.get_height() / frame_size.y)
+	if columns == 4 and rows == 4:
+		frames.remove_animation("default")
+		var directions = ["down", "left", "up", "right"]
+		for column in range(4):
+			frames.add_animation(directions[column])
+			frames.set_animation_speed(directions[column], 7)
+			for row in range(4):
+				frames.add_frame(directions[column], atlas(tex, Rect2(Vector2(column, row) * frame_size, frame_size)))
+	else:
+		frames.set_animation_speed("default", 6)
+		for i in range(columns):
+			frames.add_frame("default", atlas(tex, Rect2(Vector2(i * frame_size.x, 0), frame_size)))
+	return frames
+
+static func atlas(tex: Texture2D, region: Rect2) -> AtlasTexture:
+	var result = AtlasTexture.new()
+	result.atlas = tex
+	result.region = region
+	return result
+
+# Directional sheets pick a facing; single strips mirror horizontally.
+func face(direction: Vector2):
+	if not directional:
+		$Sprite2D.flip_h = direction.x < 0
+		return
+	var wanted = ("right" if direction.x > 0 else "left") if absf(direction.x) > absf(direction.y) else ("down" if direction.y > 0 else "up")
+	if $Sprite2D.animation != wanted:
+		var frame = $Sprite2D.frame
+		$Sprite2D.play(wanted)
+		$Sprite2D.frame = frame
+
+# Visual-only movement: dogs and guardians hop, bears waddle, bats flutter, lanterns float.
+func animate_body(motion: bool):
+	var sprite = $Sprite2D
+	if not motion:
+		sprite.position = Vector2.ZERO
+		sprite.rotation = 0
+		return
+	match kind:
+		"bat": sprite.position.y = sin(age * 11.0) * 1.5 - 2
+		"caster": sprite.position.y = sin(age * 3.0) * 2.0 - 2
+		"tank":
+			sprite.rotation = sin(age * 7.0) * 0.07
+			sprite.position.y = -absf(sin(age * 7.0)) * 0.8
+		"boss": sprite.position.y = -absf(sin(age * 2.6)) * 4.0
+		_: sprite.position.y = -absf(sin(age * 13.0)) * 2.0

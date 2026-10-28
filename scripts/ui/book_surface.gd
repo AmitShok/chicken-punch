@@ -11,6 +11,15 @@ var left_page: Control
 var gutter = 0.0
 var styles: Dictionary = {}
 
+# Like art(), at a custom pixel scale (the on/off switch reads better at 3x).
+static func art_scaled(asset: String, factor: int) -> Texture2D:
+	var key = asset + "@" + str(factor)
+	if not art_cache.has(key):
+		var image: Image = load(ROOT + asset + ".png").get_image()
+		image.resize(image.get_width() * factor, image.get_height() * factor, Image.INTERPOLATE_NEAREST)
+		art_cache[key] = ImageTexture.create_from_image(image)
+	return art_cache[key]
+
 static func art(asset: String) -> Texture2D:
 	if not art_cache.has(asset):
 		var path = ROOT + asset + ".png"

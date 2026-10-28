@@ -10,5 +10,5 @@ flavor = "The original coop defender. A steady spread of eggs."
 starting_weapon = "egg"
 cell = Vector2i(20, 21)
 ability_name = "Flutter Dash"
-ability_description = "A quick burst of speed with a moment of invulnerability."
+ability_description = "A quick dash. You are invulnerable for the whole dash, so you can dash straight through the horde."
 passive_description = "+10% experience."

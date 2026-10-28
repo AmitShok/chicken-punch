@@ -231,11 +231,11 @@ static func skin() -> Theme:
 	theme.set_icon("grabber", "HSlider", Book.art("Handle03a"))
 	theme.set_icon("grabber_highlight", "HSlider", Book.art("Handle03a"))
 	theme.set_stylebox("focus", "HSlider", StyleBoxEmpty.new())
-	# Toggles use the pack's on/off switch.
+	# Toggles use the pack's switch: the light, lit switch means ON, the dark one OFF.
 	for state in ["checked", "checked_disabled"]:
-		theme.set_icon(state, "CheckButton", Book.art("Toggle03a"))
+		theme.set_icon(state, "CheckButton", Book.art_scaled("Toggle03b", 3))
 	for state in ["unchecked", "unchecked_disabled"]:
-		theme.set_icon(state, "CheckButton", Book.art("Toggle03b"))
+		theme.set_icon(state, "CheckButton", Book.art_scaled("Toggle03a", 3))
 	for state in ["normal", "hover", "pressed", "hover_pressed"]:
 		theme.set_stylebox(state, "CheckButton", paper_style("FrameSelect01a", 8))
 	theme.set_stylebox("focus", "CheckButton", paper_style("Select01a", 0, Color.WHITE, 6))
@@ -1057,10 +1057,12 @@ static func add_options_pages(tabs: TabContainer, settings: Dictionary, apply_au
 			Data.write_save(settings))
 		audio_page.add_child(slider)
 	var mute = CheckButton.new()
-	mute.text = "Mute all sound"
+	mute.name = "MuteToggle"
 	mute.button_pressed = settings.muted
+	mute.text = toggle_text("Mute all sound", settings.muted)
 	mute.toggled.connect(func(enabled):
 		settings.muted = enabled
+		mute.text = toggle_text("Mute all sound", enabled)
 		apply_audio.call()
 		Data.write_save(settings))
 	audio_page.add_child(mute)
@@ -1076,10 +1078,16 @@ static func add_options_pages(tabs: TabContainer, settings: Dictionary, apply_au
 
 	var effects_page = scroll_page(tabs, "Effects")
 	var feedback_toggle = CheckButton.new()
-	feedback_toggle.text = "Combat motion effects"
+	feedback_toggle.name = "MotionToggle"
 	feedback_toggle.button_pressed = settings.get("combat_feedback", true)
+	feedback_toggle.text = toggle_text("Combat motion effects", feedback_toggle.button_pressed)
 	feedback_toggle.toggled.connect(func(value):
 		settings.combat_feedback = value
+		feedback_toggle.text = toggle_text("Combat motion effects", value)
 		Data.write_save(settings))
 	effects_page.add_child(feedback_toggle)
 	effects_page.add_child(label("Camera impacts, directional puffs, dash trails, recoil and health-bar trails. Disable for reduced motion.", 16))
+
+# Toggles spell out their state next to the switch: lit switch = ON.
+static func toggle_text(name: String, enabled: bool) -> String:
+	return "%s  /  %s" % [name, "ON" if enabled else "OFF"]
