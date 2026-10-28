@@ -8,6 +8,10 @@ const LEAF = Color("426344")
 const YOLK = Color("f5c957")
 const MUTED = Color("6a634a")
 const Inspection = preload("res://scripts/survival/inspection.gd")
+const Book = preload("res://scripts/ui/book_surface.gd")
+const FONT = "res://assets/fonts/m6x11.ttf"
+const SPINE = 44
+static var font_cache: FontFile
 var chest_prompt: Label
 var chest_cost_label: Label
 var inspect_title: Label
@@ -53,20 +57,32 @@ static func box_style(color: Color = Color("fff1cc"), border: Color = Color("896
 	box.set_content_margin_all(margin)
 	return box
 
-static func paper_style(asset: String = "Popup01a", margin: int = 10, tint: Color = Color.WHITE) -> StyleBoxTexture:
+static func paper_style(asset: String = "Popup01a", margin: int = 10, tint: Color = Color.WHITE, edge: int = 5) -> StyleBoxTexture:
 	var style = StyleBoxTexture.new()
-	style.texture = load("res://assets/ui/travel_book/Sprites/UI_TravelBook_" + asset + ".png")
-	style.set_texture_margin_all(5)
+	style.texture = Book.art(asset)
+	style.set_texture_margin_all(edge * Book.PIXEL)
 	style.set_content_margin_all(margin)
 	style.modulate_color = tint
 	return style
 
-static func book_frame(frame: PanelContainer, split: float = 0.0):
+static func pixel_font() -> FontFile:
+	if font_cache == null:
+		font_cache = load(FONT)
+		font_cache.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+		font_cache.hinting = TextServer.HINTING_NONE
+		font_cache.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+		# m6x11 is drawn on a 16px grid; any requested size snaps to whole multiples.
+		font_cache.fixed_size = 16
+		font_cache.fixed_size_scale_mode = TextServer.FIXED_SIZE_SCALE_INTEGER_ONLY
+	return font_cache
+
+static func book_frame(frame: PanelContainer, split: float = 0.0) -> Control:
 	var padding = StyleBoxEmpty.new()
-	padding.set_content_margin_all(28)
+	padding.set_content_margin_all(32)
+	padding.content_margin_bottom = 36
 	frame.add_theme_stylebox_override("panel", padding)
 	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var surface = preload("res://scripts/ui/book_surface.gd").new()
+	var surface = Book.new()
 	surface.split = split
 	# Top-level layout offsets keep decoration outside the container's content padding.
 	frame.add_child(surface)
@@ -77,40 +93,159 @@ static func book_frame(frame: PanelContainer, split: float = 0.0):
 		surface.size = frame.size)
 	frame.sort_children.connect(func():
 		surface.position = Vector2.ZERO
-		surface.size = frame.size)
+		surface.size = frame.size
+		surface.queue_redraw())
+	return surface
+
+# An open book with a page per column; the spine follows the left column.
+static func book_spread(frame: PanelContainer, left_width: float) -> Array:
+	var surface = book_frame(frame)
+	var pages = HBoxContainer.new()
+	pages.add_theme_constant_override("separation", SPINE)
+	frame.add_child(pages)
+	var columns: Array = []
+	for i in range(2):
+		var column = VBoxContainer.new()
+		column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		column.add_theme_constant_override("separation", 8)
+		pages.add_child(column)
+		columns.append(column)
+	columns[0].custom_minimum_size.x = left_width
+	columns[1].size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	surface.left_page = columns[0]
+	surface.gutter = SPINE
+	columns[0].resized.connect(surface.queue_redraw)
+	return columns
+
+static func title_banner(title: String) -> PanelContainer:
+	var plate = PanelContainer.new()
+	var style = StyleBoxTexture.new()
+	style.texture = Book.art("Banner01a")
+	style.texture_margin_left = 12 * Book.PIXEL
+	style.texture_margin_right = 12 * Book.PIXEL
+	style.texture_margin_top = 8 * Book.PIXEL
+	style.texture_margin_bottom = 4 * Book.PIXEL
+	style.content_margin_left = 40
+	style.content_margin_right = 40
+	style.content_margin_top = 10
+	style.content_margin_bottom = 12
+	plate.add_theme_stylebox_override("panel", style)
+	plate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	plate.custom_minimum_size.x = 420
+	plate.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var text = label(title, 32)
+	text.name = "BannerTitle"
+	text.autowrap_mode = TextServer.AUTOWRAP_OFF
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	plate.add_child(text)
+	return plate
+
+# A bookmark tab along the top edge of the book. The selected tab stands taller.
+static func book_tab(text: String, icon_asset: String, selected: bool, action: Callable) -> Button:
+	var tab = Button.new()
+	tab.text = text
+	tab.icon = Book.art(icon_asset)
+	tab.focus_mode = Control.FOCUS_NONE
+	tab.size_flags_vertical = Control.SIZE_SHRINK_END
+	tab.custom_minimum_size = Vector2(0, 40 if selected else 32)
+	tab.pressed.connect(action)
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var tint = Color.WHITE if selected else Color("e8c590").lightened(0.15) if state == "hover" else Color("e0bb8b")
+		var style = paper_style("Marker01a", 8, tint)
+		style.content_margin_top = 6
+		style.content_margin_bottom = 2
+		style.content_margin_left = 12
+		style.content_margin_right = 12
+		tab.add_theme_stylebox_override(state, style)
+	tab.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	tab.add_theme_color_override("font_color", INK if selected else MUTED)
+	tab.add_theme_color_override("font_hover_color", INK)
+	return tab
+
+static func hint_row(hints: Array) -> HBoxContainer:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	for entry in hints:
+		var key = PanelContainer.new()
+		key.add_theme_stylebox_override("panel", paper_style("Frame01a", 4, Color.WHITE, 3))
+		var key_text = label(entry[0], 16)
+		key_text.autowrap_mode = TextServer.AUTOWRAP_OFF
+		key.add_child(key_text)
+		row.add_child(key)
+		var text = label(entry[1], 16)
+		text.autowrap_mode = TextServer.AUTOWRAP_OFF
+		text.add_theme_color_override("font_color", MUTED)
+		row.add_child(text)
+	return row
 
 static func skin() -> Theme:
 	var theme = Theme.new()
-	theme.default_font = ThemeDB.fallback_font
-	theme.default_font_size = 17
-	for type in ["Label", "Button", "OptionButton", "TooltipLabel", "PopupMenu", "TabContainer"]:
+	theme.default_font = pixel_font()
+	theme.default_font_size = 16
+	for type in ["Label", "Button", "OptionButton", "TooltipLabel", "PopupMenu", "TabContainer", "TabBar", "CheckButton"]:
 		theme.set_color("font_color", type, INK)
-	for type in ["Button", "OptionButton"]:
-		for state in ["font_hover_color", "font_pressed_color", "font_focus_color"]:
+	for type in ["Button", "OptionButton", "CheckButton"]:
+		for state in ["font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 			theme.set_color(state, type, INK)
-	theme.set_color("font_disabled_color", "Button", Color("81795d"))
 	for type in ["Button", "OptionButton"]:
-		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-			var color = Color("f9dfa4") if state == "normal" else Color("ffe9b2") if state == "hover" else Color("edcb81") if state == "pressed" else Color("e2d7b7")
-			var style = box_style(color, Color("a8804e"), 8)
-			if state == "focus":
-				style.bg_color = Color.TRANSPARENT
-				style.border_color = Color("b96332")
-				style.set_border_width_all(3)
-				style.shadow_size = 0
-			theme.set_stylebox(state, type, style if state == "focus" else paper_style("FrameSelect01a", 8, Color.WHITE if state == "normal" else Color(1.08, 1.08, 1.08) if state == "hover" else Color("d7bc91") if state == "disabled" else Color("e0bb8b")))
+		theme.set_color("font_disabled_color", type, Color("8a7658"))
+		for state in ["normal", "hover", "pressed", "disabled"]:
+			theme.set_stylebox(state, type, paper_style("FrameSelect01b" if state == "pressed" else "FrameSelect01a", 8, Color(1.06, 1.06, 1.06) if state == "hover" else Color("d9c4a0") if state == "disabled" else Color.WHITE))
+		theme.set_stylebox("hover_pressed", type, paper_style("FrameSelect01b", 8))
+		# Keyboard focus shows the pack's corner brackets around the row.
+		theme.set_stylebox("focus", type, paper_style("Select01a", 0, Color.WHITE, 6))
 	theme.set_stylebox("panel", "PanelContainer", paper_style())
-	theme.set_stylebox("panel", "TooltipPanel", box_style(PAPER, GOLD))
+	theme.set_stylebox("panel", "TooltipPanel", paper_style("Popup01a", 10))
 	theme.set_font_size("font_size", "TooltipLabel", 16)
-	theme.set_stylebox("panel", "PopupMenu", box_style(PAPER, GOLD))
-	theme.set_stylebox("hover", "PopupMenu", box_style(Color("f5d781"), GOLD, 4))
+	theme.set_stylebox("panel", "PopupMenu", paper_style("Popup01a", 8))
+	theme.set_stylebox("hover", "PopupMenu", paper_style("FrameSelect01b", 4))
 	theme.set_color("font_hover_color", "PopupMenu", INK)
-	theme.set_stylebox("panel", "TabContainer", paper_style("Popup01a", 10))
-	for state in ["tab_selected", "tab_unselected", "tab_hovered"]:
-		theme.set_stylebox(state, "TabContainer", paper_style("FrameSelect01a", 9, Color("a9c99a") if state == "tab_selected" else Color.WHITE))
-	theme.set_color("font_selected_color", "TabContainer", INK)
-	theme.set_color("font_unselected_color", "TabContainer", INK)
-	theme.set_color("font_hovered_color", "TabContainer", INK)
+	var page = StyleBoxEmpty.new()
+	page.set_content_margin_all(6)
+	theme.set_stylebox("panel", "TabContainer", page)
+	for type in ["TabContainer", "TabBar"]:
+		for state in ["tab_selected", "tab_unselected", "tab_hovered", "tab_disabled"]:
+			var tab = paper_style("Marker01a", 8, Color.WHITE if state == "tab_selected" else Color("f2d6a6") if state == "tab_hovered" else Color("e0bb8b"))
+			tab.content_margin_left = 12
+			tab.content_margin_right = 12
+			tab.content_margin_top = 8 if state == "tab_selected" else 4
+			tab.content_margin_bottom = 2
+			theme.set_stylebox(state, type, tab)
+		theme.set_stylebox("tab_focus", type, StyleBoxEmpty.new())
+		theme.set_color("font_selected_color", type, INK)
+		theme.set_color("font_unselected_color", type, MUTED)
+		theme.set_color("font_hovered_color", type, INK)
+	# Sliders: dark bar, tan fill, the pack's handle.
+	var bar = paper_style("Bar01a", 0, Color.WHITE, 2)
+	bar.content_margin_top = 4
+	bar.content_margin_bottom = 4
+	theme.set_stylebox("slider", "HSlider", bar)
+	var fill = paper_style("Fill01a", 0, Color.WHITE, 1)
+	fill.expand_margin_top = -2
+	fill.expand_margin_bottom = -2
+	theme.set_stylebox("grabber_area", "HSlider", fill)
+	theme.set_stylebox("grabber_area_highlight", "HSlider", fill)
+	theme.set_icon("grabber", "HSlider", Book.art("Handle03a"))
+	theme.set_icon("grabber_highlight", "HSlider", Book.art("Handle03a"))
+	theme.set_stylebox("focus", "HSlider", StyleBoxEmpty.new())
+	# Toggles use the pack's on/off switch.
+	for state in ["checked", "checked_disabled"]:
+		theme.set_icon(state, "CheckButton", Book.art("Toggle03a"))
+	for state in ["unchecked", "unchecked_disabled"]:
+		theme.set_icon(state, "CheckButton", Book.art("Toggle03b"))
+	for state in ["normal", "hover", "pressed", "hover_pressed"]:
+		theme.set_stylebox(state, "CheckButton", paper_style("FrameSelect01a", 8))
+	theme.set_stylebox("focus", "CheckButton", paper_style("Select01a", 0, Color.WHITE, 6))
+	for type in ["VScrollBar", "HScrollBar"]:
+		var track = StyleBoxFlat.new()
+		track.bg_color = Color("e6c491")
+		track.set_content_margin_all(3)
+		theme.set_stylebox("scroll", type, track)
+		for state in ["grabber", "grabber_highlight", "grabber_pressed"]:
+			var grip = StyleBoxFlat.new()
+			grip.bg_color = Color("6b4a45") if state == "grabber" else Color("8a5f55")
+			grip.set_content_margin_all(3)
+			theme.set_stylebox(state, type, grip)
 	return theme
 
 static func paint_button(item: Button, color: Color, text_color: Color = PAPER):
@@ -458,21 +593,19 @@ func panel(title: String, subtitle: String) -> VBoxContainer:
 	var center = CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal.add_child(center)
+	var stack = VBoxContainer.new()
+	stack.add_theme_constant_override("separation", -12)
+	center.add_child(stack)
+	var title_plate = title_banner(title)
+	title_plate.z_index = 1
+	stack.add_child(title_plate)
 	var frame = PanelContainer.new()
 	frame.custom_minimum_size = Vector2(928, 0)
 	book_frame(frame)
-	center.add_child(frame)
+	stack.add_child(frame)
 	var box = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	frame.add_child(box)
-	var heading_row = HBoxContainer.new()
-	heading_row.add_theme_constant_override("separation", 12)
-	box.add_child(heading_row)
-	heading_row.add_child(portrait(run.save.get("character", "nugget") if Data.CHARACTERS.has(run.save.get("character", "nugget")) else "nugget", 38))
-	var heading = label(title, 28)
-	heading.add_theme_color_override("font_color", LEAF)
-	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	heading_row.add_child(heading)
 	var hint = label(subtitle, 15)
 	hint.add_theme_color_override("font_color", MUTED)
 	box.add_child(hint)
@@ -514,8 +647,7 @@ func show_choices():
 		if not fallback:
 			card.add_child(build_icon(key, is_item, 40))
 		var info = ["Field Rations" if key == "feast" else "Coin Pouch", "Heal 30 health." if key == "feast" else "Gain 15 coins."] if fallback else Data.ITEMS[key] if is_item else Data.UPGRADES[key]
-		var title = label(info[0], 21)
-		title.custom_minimum_size.y = 28
+		var title = label(info[0], 32)
 		card.add_child(title)
 		if not is_item and Data.EVOLUTIONS.has(key):
 			card_frame.tooltip_text = "EVOLUTION: " + Data.UPGRADES[Data.EVOLUTIONS[key][0]][0] + " tome + weapon rank 10 + chest\n" + Data.EVOLUTION_EFFECTS[key]
@@ -689,7 +821,7 @@ func add_loadout_page(tabs: TabContainer):
 	details.add_child(heading)
 	inspect_icon = build_icon(run.ranks.keys()[0], false, 48)
 	heading.add_child(inspect_icon)
-	inspect_title = label("", 23)
+	inspect_title = label("", 32)
 	inspect_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(inspect_title)
 	inspect_body = label("", 16)
@@ -797,7 +929,8 @@ static func add_options_pages(tabs: TabContainer, settings: Dictionary, apply_au
 	credits.add_child(label("CHICKENPUNCH", 24))
 	credits.add_child(label("Pixel art", 19))
 	credits.add_child(label("ChickenPack\nNinja Adventure / Pixel-boy & AAA", 18))
-	credits.add_child(label("Travel Book Lite / Crusenho Agus Hennihuno\ncrusenho.itch.io/complete-ui-book-styles-pack\nUI sprites resized with nine-slicing and tinted in-engine; original art unchanged.", 16))
+	credits.add_child(label("Travel Book Lite / Crusenho Agus Hennihuno\ncrusenho.itch.io/complete-ui-book-styles-pack\nUI sprites drawn at 2x, nine-sliced and tinted in-engine; original art unchanged.", 16))
+	credits.add_child(label("Font: m6x11 by Daniel Linssen\nmanagore.itch.io/m6x11", 16))
 	credits.add_child(label("Additional pixel art created in Aseprite.", 16))
 
 	var effects_page = scroll_page(tabs, "Effects")
