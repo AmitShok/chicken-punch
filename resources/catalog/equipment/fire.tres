@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Scroll/ScrollFire.png" id="1_af2s2"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_fire.png" id="2_ol4ti"]
+[ext_resource type="Texture2D" path="res://assets/Coop/fire.png" id="3_w060l"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="4_tnfqb"]
+
+[resource]
+script = ExtResource("4_tnfqb")
+key = "fire"
+display_name = "Hot Foot"
+description = "Leave burning ground behind you. More damage and duration. Overlapping flames do not stack."
+kind = 0
+art = ExtResource("1_af2s2")
+icon = ExtResource("3_w060l")
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "area"
+evolution_name = "Phoenix Trail"
+evolution_effect = "Burning patches become 60% larger, covering more ground."
+evolved_icon = ExtResource("2_ol4ti")

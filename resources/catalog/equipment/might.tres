@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Weapons/Sword/Sprite.png" id="1_vhi8f"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_might.png" id="2_8tlif"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_1va8p"]
+
+[resource]
+script = ExtResource("3_1va8p")
+key = "might"
+display_name = "Fighting Spirit"
+description = "DAMAGE: +20% damage to every weapon per rank."
+art = ExtResource("1_vhi8f")
+icon = ExtResource("2_8tlif")
+starter = true

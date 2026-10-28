@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/Rock.png" id="1_ymyxr"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_48mad"]
+
+[resource]
+script = ExtResource("2_48mad")
+key = "powder"
+display_name = "Blast Powder"
+description = "Every 8th kill explodes for 20 damage per stack."
+rarity = 2
+icon = ExtResource("1_ymyxr")
+unlock_seconds = 240
+unlock_gold = 60

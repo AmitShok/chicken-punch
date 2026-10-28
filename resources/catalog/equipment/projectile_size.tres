@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/BarMithril.png" id="1_rleho"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_projectile_size.png" id="2_qd4db"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_i004e"]
+
+[resource]
+script = ExtResource("3_i004e")
+key = "projectile_size"
+display_name = "Giant Hatch"
+description = "+20% weapon size and hit radius per rank. Also enlarges explosions, fire and lightning reach."
+art = ExtResource("1_rleho")
+icon = ExtResource("2_qd4db")

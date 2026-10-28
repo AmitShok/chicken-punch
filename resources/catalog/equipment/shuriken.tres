@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/FX/Projectile/Shuriken.png" id="1_n21sr"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_shuriken.png" id="2_4ay3w"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_v1wyi"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jqq4r"]
+atlas = ExtResource("1_n21sr")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("3_v1wyi")
+key = "shuriken"
+display_name = "Razor Feathers"
+description = "Piercing fans of shuriken. More blades per rank."
+kind = 0
+art = ExtResource("1_n21sr")
+icon = SubResource("AtlasTexture_jqq4r")
+starter = true
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "speed"
+evolution_name = "Featherstorm"
+evolution_effect = "Three additional piercing blades in every fan."
+evolved_icon = ExtResource("2_4ay3w")

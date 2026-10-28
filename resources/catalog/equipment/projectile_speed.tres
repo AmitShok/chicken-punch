@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/feather.png" id="1_cv5xs"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_projectile_speed.png" id="2_sca1y"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_oubhb"]
+
+[resource]
+script = ExtResource("3_oubhb")
+key = "projectile_speed"
+display_name = "Tailwind"
+description = "+20% projectile travel speed and orbit rotation speed per rank."
+art = ExtResource("1_cv5xs")
+icon = ExtResource("2_sca1y")

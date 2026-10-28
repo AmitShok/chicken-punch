@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/GemYellow.png" id="1_u6yms"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_2xxvr"]
+
+[resource]
+script = ExtResource("2_2xxvr")
+key = "lens"
+display_name = "Hawk Eye"
+description = "+8% critical chance per stack. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits."
+rarity = 1
+icon = ExtResource("1_u6yms")
+unlock_seconds = 120
+unlock_gold = 40

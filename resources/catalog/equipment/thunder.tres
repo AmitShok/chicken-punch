@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Scroll/ScrollThunder.png" id="1_yjpf4"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_thunder.png" id="2_s55ph"]
+[ext_resource type="Texture2D" path="res://assets/Coop/thunder.png" id="3_h17ty"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="4_5rjp8"]
+
+[resource]
+script = ExtResource("4_5rjp8")
+key = "thunder"
+display_name = "Storm Call"
+description = "Strikes one enemy at rank 1. Each rank adds damage; chaining starts at rank 2 with one extra target per rank."
+kind = 0
+art = ExtResource("1_yjpf4")
+icon = ExtResource("3_h17ty")
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "crit"
+evolution_name = "Thunderhead"
+evolution_effect = "Lightning can jump to three additional enemies per cast."
+evolved_icon = ExtResource("2_s55ph")

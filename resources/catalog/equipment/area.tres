@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Object/Book.png" id="1_rly5b"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_area.png" id="2_6oq7c"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_f476u"]
+
+[resource]
+script = ExtResource("3_f476u")
+key = "area"
+display_name = "Wide Wings"
+description = "+18% area. Fire rank 10 + this tome + chest evolves Fire."
+art = ExtResource("1_rly5b")
+icon = ExtResource("2_6oq7c")

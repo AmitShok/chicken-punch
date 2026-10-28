@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Object/Hourglass.png" id="1_3r6gf"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_haste.png" id="2_j6dcb"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_krqgg"]
+
+[resource]
+script = ExtResource("3_krqgg")
+key = "haste"
+display_name = "Quick Hatch"
+description = "RELOAD SPEED: 10% shorter attack cooldown per rank. Evolves Egg Barrage."
+art = ExtResource("1_3r6gf")
+icon = ExtResource("2_j6dcb")
+starter = true

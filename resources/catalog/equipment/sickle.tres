@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Tool/Sickle.png" id="1_7ryer"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_sickle.png" id="2_5mtek"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_t2o6g"]
+
+[resource]
+script = ExtResource("3_t2o6g")
+key = "sickle"
+display_name = "Harvest Moon"
+description = "A spinning sickle returns to you, hitting again on its way back."
+kind = 0
+art = ExtResource("1_7ryer")
+icon = ExtResource("1_7ryer")
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "magnet"
+evolution_name = "Reaping Season"
+evolution_effect = "Throw a second returning sickle in the opposite direction."
+evolved_icon = ExtResource("2_5mtek")

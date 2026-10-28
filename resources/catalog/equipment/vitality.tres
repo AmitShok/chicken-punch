@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Potion/Heart.png" id="1_tt7sc"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_vitality.png" id="2_8msre"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_3sjvx"]
+
+[resource]
+script = ExtResource("3_3sjvx")
+key = "vitality"
+display_name = "Big Heart"
+description = "+20 maximum health and heal 20."
+art = ExtResource("1_tt7sc")
+icon = ExtResource("2_8msre")
+starter = true

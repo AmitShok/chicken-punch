@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Weapons/Sai/Sprite.png" id="1_cece8"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_orbit.png" id="2_8a6ms"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_t0yxt"]
+
+[resource]
+script = ExtResource("3_t0yxt")
+key = "orbit"
+display_name = "Coop Guard"
+description = "Orbiting blades protect your personal space."
+kind = 0
+art = ExtResource("1_cece8")
+icon = ExtResource("1_cece8")
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "armor"
+evolution_name = "Iron Roost"
+evolution_effect = "Two additional orbiting blades protect your chicken."
+evolved_icon = ExtResource("2_8a6ms")

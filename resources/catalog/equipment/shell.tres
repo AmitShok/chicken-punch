@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/Rock.png" id="1_q68bc"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_shell.png" id="2_tqulr"]
+[ext_resource type="Texture2D" path="res://assets/Coop/shell.png" id="3_ne56m"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="4_1ryb6"]
+
+[resource]
+script = ExtResource("4_1ryb6")
+key = "shell"
+display_name = "Shell Shock"
+description = "Launch explosive shells at the nearest enemy."
+kind = 0
+art = ExtResource("1_q68bc")
+icon = ExtResource("3_ne56m")
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "might"
+evolution_name = "Meteor Nest"
+evolution_effect = "Explosions gain 45% more radius before area bonuses."
+evolved_icon = ExtResource("2_tqulr")

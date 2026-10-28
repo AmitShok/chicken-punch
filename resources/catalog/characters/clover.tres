@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_2ip2f"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Cow/SpriteSheetWhiteSide.png" id="2_dhox7"]
+
+[resource]
+script = ExtResource("1_2ip2f")
+key = "clover"
+display_name = "Clover"
+flavor = "The pasture protector. Orbiting blades guard close quarters."
+starting_weapon = "orbit"
+sprite_sheet = ExtResource("2_dhox7")
+cell = Vector2i(24, 16)
+faces_left = true
+unlock_gold = 120
+unlock_seconds = 300

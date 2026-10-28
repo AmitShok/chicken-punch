@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/egg_sprite.png" id="1_8k5hl"]
+[ext_resource type="Texture2D" path="res://assets/Coop/evo_egg.png" id="2_bdwqo"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_g2oab"]
+
+[resource]
+script = ExtResource("3_g2oab")
+key = "egg"
+display_name = "Egg Barrage"
+description = "Another egg per volley; +4 damage."
+kind = 0
+art = ExtResource("1_8k5hl")
+icon = ExtResource("1_8k5hl")
+starter = true
+unlock_seconds = 120
+unlock_gold = 60
+evolution_tome = "haste"
+evolution_name = "Golden Omelette"
+evolution_effect = "Three extra eggs in every volley. Every hit now deals splash damage."
+evolved_icon = ExtResource("2_bdwqo")

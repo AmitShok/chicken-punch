@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Food/Seed1.png" id="1_15jhf"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_speed.png" id="2_pp8y4"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_nhl1l"]
+
+[resource]
+script = ExtResource("3_nhl1l")
+key = "speed"
+display_name = "Fleet Feet"
+description = "+8% movement speed. Shuriken rank 10 + this tome + chest evolves Shuriken."
+art = ExtResource("1_15jhf")
+icon = ExtResource("2_pp8y4")
+starter = true

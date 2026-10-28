@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Food/Seed3.png" id="1_5fixq"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_projectile_count.png" id="2_jlh4x"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_weubk"]
+
+[resource]
+script = ExtResource("3_weubk")
+key = "projectile_count"
+display_name = "Brood Burst"
+description = "Extra shots, blades and chain targets; denser fire trails. +1 / +2 / +3 by rarity."
+art = ExtResource("1_5fixq")
+icon = ExtResource("2_jlh4x")

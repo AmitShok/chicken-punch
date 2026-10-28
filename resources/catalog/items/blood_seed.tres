@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Resource/GemRed.png" id="1_p81qr"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_vprx0"]
+
+[resource]
+script = ExtResource("2_vprx0")
+key = "blood_seed"
+display_name = "Crimson Seed"
+description = "Every 15 kills, heal 3 health per stack."
+rarity = 1
+icon = ExtResource("1_p81qr")
+unlock_seconds = 120
+unlock_gold = 40

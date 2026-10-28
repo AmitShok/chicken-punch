@@ -5,23 +5,86 @@ static var save_path = "user://coop_save.cfg"
 const MAX_RANK = 10
 const MAX_ITEM_LEVEL = 10
 const PACK = "res://assets/Ninja Adventure - Asset Pack/"
-# Name, starting weapon, sprite sheet (empty = original chicken), flavor.
-const CHARACTERS = {
-	"nugget": ["Nugget", "egg", "", "The original coop defender. A steady spread of eggs."],
-	"pepper": ["Pepper", "fire", PACK + "Actor/Animals/Chicken/SpriteSheetBlack.png", "A hot-tempered hen. Leave burning trails for the horde."],
-	"whisker": ["Whisker", "sickle", PACK + "Actor/Animals/Cat/SpriteSheet.png", "The barn's night watch. Catch enemies on the sickle's return."],
-	"truffle": ["Truffle", "shell", PACK + "Actor/Animals/Pig/SpriteSheetPink.png", "A fearless farm pig. Break up crowds with explosive shells."],
-	"clover": ["Clover", "orbit", PACK + "Actor/Animals/Cow/SpriteSheetWhiteSide.png", "The pasture protector. Orbiting blades guard close quarters."]
-}
 
+# Weapons, tomes, items and defenders live in res://resources/catalog/ as
+# EquipmentDef / ItemDef / CharacterDef resources, listed in catalog.tres.
+# The tables below are built from them in the original shapes, so existing
+# code keeps working. Prefer equipment_def() / item_def() / character_def()
+# in new code.
+static var CATALOG = load("res://resources/catalog.tres")
+# Key -> [name, description, art path, max rank]
+static var UPGRADES: Dictionary = build_upgrades()
+static var WEAPONS: Array = CATALOG.equipment.filter(func(d): return d.kind == 0).map(func(d): return d.key)
+# Key -> [name, description, icon path, rarity]
+static var ITEMS: Dictionary = build_items()
+# Weapon key -> [evolution tome key, evolved name]
+static var EVOLUTIONS: Dictionary = build_evolutions()
+static var EVOLUTION_EFFECTS: Dictionary = build_evolution_effects()
+static var STARTER_EQUIPMENT: Array = CATALOG.equipment.filter(func(d): return d.starter).map(func(d): return d.key)
+static var STARTER_ITEMS: Array = CATALOG.items.filter(func(d): return d.starter).map(func(d): return d.key)
+# Key -> [name, starting weapon, sprite sheet path ("" = original chicken), flavor]
+static var CHARACTERS: Dictionary = build_characters()
 # Explicit sheet geometry and facing; animal sheets do not share one layout.
-const CHARACTER_VISUALS = {
-	"nugget": {"cell": Vector2i(20, 21), "faces_left": false},
-	"pepper": {"cell": Vector2i(16, 16), "faces_left": false},
-	"whisker": {"cell": Vector2i(16, 16), "faces_left": false},
-	"truffle": {"cell": Vector2i(16, 16), "faces_left": true},
-	"clover": {"cell": Vector2i(24, 16), "faces_left": true}
-}
+static var CHARACTER_VISUALS: Dictionary = build_character_visuals()
+static var CHARACTER_COSTS: Dictionary = build_character_field("unlock_gold")
+static var CHARACTER_MILESTONES: Dictionary = build_character_field("unlock_seconds")
+
+static func equipment_def(key: String) -> Resource:
+	for def in CATALOG.equipment:
+		if def.key == key: return def
+	return null
+
+static func item_def(key: String) -> Resource:
+	for def in CATALOG.items:
+		if def.key == key: return def
+	return null
+
+static func character_def(key: String) -> Resource:
+	for def in CATALOG.characters:
+		if def.key == key: return def
+	return null
+
+static func build_upgrades() -> Dictionary:
+	var table = {}
+	for def in CATALOG.equipment:
+		table[def.key] = [def.display_name, def.description, def.art.resource_path, def.max_rank]
+	return table
+
+static func build_items() -> Dictionary:
+	var table = {}
+	for def in CATALOG.items:
+		table[def.key] = [def.display_name, def.description, def.icon.resource_path, def.rarity]
+	return table
+
+static func build_evolutions() -> Dictionary:
+	var table = {}
+	for def in CATALOG.equipment:
+		if def.evolution_tome != "": table[def.key] = [def.evolution_tome, def.evolution_name]
+	return table
+
+static func build_evolution_effects() -> Dictionary:
+	var table = {}
+	for def in CATALOG.equipment:
+		if def.evolution_tome != "": table[def.key] = def.evolution_effect
+	return table
+
+static func build_characters() -> Dictionary:
+	var table = {}
+	for def in CATALOG.characters:
+		table[def.key] = [def.display_name, def.starting_weapon, def.sprite_sheet.resource_path if def.sprite_sheet else "", def.flavor]
+	return table
+
+static func build_character_visuals() -> Dictionary:
+	var table = {}
+	for def in CATALOG.characters:
+		table[def.key] = {"cell": def.cell, "faces_left": def.faces_left}
+	return table
+
+static func build_character_field(field: String) -> Dictionary:
+	var table = {}
+	for def in CATALOG.characters:
+		table[def.key] = def.get(field)
+	return table
 
 static func character_icon(key: String) -> Texture2D:
 	var path = CHARACTERS[key][2]
@@ -30,60 +93,11 @@ static func character_icon(key: String) -> Texture2D:
 	atlas.region = Rect2(Vector2.ZERO, Vector2(CHARACTER_VISUALS[key].cell))
 	return atlas
 
-const UPGRADES = {
-	"projectile_speed": ["Tailwind", "+20% projectile travel speed and orbit rotation speed per rank.", PACK + "Items/Resource/feather.png", MAX_RANK],
-	"projectile_count": ["Brood Burst", "Extra shots, blades and chain targets; denser fire trails. +1 / +2 / +3 by rarity.", PACK + "Items/Food/Seed3.png", MAX_RANK],
-	"projectile_size": ["Giant Hatch", "+20% weapon size and hit radius per rank. Also enlarges explosions, fire and lightning reach.", PACK + "Items/Resource/BarMithril.png", MAX_RANK],
-	"egg": ["Egg Barrage", "Another egg per volley; +4 damage.", "res://assets/sprites/egg_sprite.png", MAX_RANK],
-	"shuriken": ["Razor Feathers", "Piercing fans of shuriken. More blades per rank.", PACK + "FX/Projectile/Shuriken.png", MAX_RANK],
-	"fire": ["Hot Foot", "Leave burning ground behind you. More damage and duration. Overlapping flames do not stack.", PACK + "Items/Scroll/ScrollFire.png", MAX_RANK],
-	"orbit": ["Coop Guard", "Orbiting blades protect your personal space.", PACK + "Items/Weapons/Sai/Sprite.png", MAX_RANK],
-	"might": ["Fighting Spirit", "DAMAGE: +20% damage to every weapon per rank.", PACK + "Items/Weapons/Sword/Sprite.png", MAX_RANK],
-	"haste": ["Quick Hatch", "RELOAD SPEED: 10% shorter attack cooldown per rank. Evolves Egg Barrage.", PACK + "Items/Object/Hourglass.png", MAX_RANK],
-	"area": ["Wide Wings", "+18% area. Fire rank 10 + this tome + chest evolves Fire.", PACK + "Items/Object/Book.png", MAX_RANK],
-	"speed": ["Fleet Feet", "+8% movement speed. Shuriken rank 10 + this tome + chest evolves Shuriken.", PACK + "Items/Food/Seed1.png", MAX_RANK],
-	"armor": ["Iron Shell", "Reduce incoming damage by 1. Guard rank 10 + this tome + chest evolves Guard.", PACK + "Items/Potion/MilkPot.png", MAX_RANK],
-	"magnet": ["Forager", "+30 pickup radius and +10% XP.", PACK + "Items/Object/Bag.png", MAX_RANK],
-	"vitality": ["Big Heart", "+20 maximum health and heal 20.", PACK + "Items/Potion/Heart.png", MAX_RANK],
-	"thunder": ["Storm Call", "Strikes one enemy at rank 1. Each rank adds damage; chaining starts at rank 2 with one extra target per rank.", PACK + "Items/Scroll/ScrollThunder.png", MAX_RANK],
-	"frost": ["Frost Quills", "Piercing ice shards slow enemies by 45% for 2 seconds.", PACK + "Items/Scroll/ScrollIce.png", MAX_RANK],
-	"sickle": ["Harvest Moon", "A spinning sickle returns to you, hitting again on its way back.", PACK + "Items/Tool/Sickle.png", MAX_RANK],
-	"shell": ["Shell Shock", "Launch explosive shells at the nearest enemy.", PACK + "Items/Resource/Rock.png", MAX_RANK],
-	"crit": ["Keen Eye", "+8% critical chance. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits.", PACK + "Items/Resource/GemYellow.png", MAX_RANK],
-	"duration": ["Long Summer", "Extends the duration of effects such as lingering fire and icy slows by 20% per rank.", PACK + "Items/Scroll/ScrollPlant.png", MAX_RANK],
-	"regen": ["Second Wind", "Recover 0.4 health per second.", PACK + "Items/Potion/LifePot.png", MAX_RANK]
-}
-const WEAPONS = ["egg", "shuriken", "fire", "orbit", "thunder", "frost", "sickle", "shell"]
 const WEAPON_SLOTS = 4
 const TOME_SLOTS = 4
 const RARITIES = ["COMMON", "RARE", "EPIC"]
 const RARITY_COLORS = [Color("92713a"), Color("39754e"), Color("8b4a9b")]
 # Treasure items are distinct from level-up tomes. Each stacks up to ten times.
-const ITEMS = {
-	"key": ["Coop Key", "Chance to open paid chests for free without raising prices: stacks / (stacks + 10).", PACK + "Items/Treasure/GoldKey.png", 0],
-	"clover": ["Lucky Seed", "+6% rare-upgrade chance per stack; improves rare chest loot odds.", PACK + "Items/Food/Seed3.png", 0],
-	"lens": ["Hawk Eye", "+8% critical chance per stack. Critical hits deal 2x damage; chance above 100% rolls 4x overcrits.", PACK + "Items/Resource/GemYellow.png", 1],
-	"honey": ["Wild Honey", "Regenerate 0.3 health per second per stack.", PACK + "Items/Food/Honey.png", 0],
-	"lunch": ["Packed Lunch", "Heal 12 health per stack whenever you open a chest.", PACK + "Items/Food/Onigiri.png", 0],
-	"magnet_stone": ["Lodestone", "+25 pickup radius per stack.", PACK + "Items/Resource/BarMithril.png", 0],
-	"powder": ["Blast Powder", "Every 8th kill explodes for 20 damage per stack.", PACK + "Items/Resource/Rock.png", 2],
-	"blood_seed": ["Crimson Seed", "Every 15 kills, heal 3 health per stack.", PACK + "Items/Resource/GemRed.png", 1],
-	"berserk": ["Red Feather", "+25% damage per stack while below half health.", PACK + "Items/Resource/feather.png", 1],
-	"silk": ["Wind Charm", "Dash recharges 15% faster per stack.", PACK + "Items/Object/PanFlute.png", 1],
-	"crown": ["Giant Slayer", "+20% damage to elites and guardians per stack.", PACK + "Items/Resource/BarGold.png", 2],
-	"compass": ["Field Notes", "+12% experience per stack.", PACK + "Items/Other/Letter.png", 0],
-	"bead": ["Iron Bead", "+1 armor per stack.", PACK + "Items/Resource/BarIron.png", 0]
-}
-const EVOLUTION_EFFECTS = {
-	"egg": "Three extra eggs in every volley. Every hit now deals splash damage.",
-	"shuriken": "Three additional piercing blades in every fan.",
-	"fire": "Burning patches become 60% larger, covering more ground.",
-	"orbit": "Two additional orbiting blades protect your chicken.",
-	"thunder": "Lightning can jump to three additional enemies per cast.",
-	"frost": "Two additional ice shards. Slow becomes 70% and lasts 3.5 seconds before tome bonuses.",
-	"sickle": "Throw a second returning sickle in the opposite direction.",
-	"shell": "Explosions gain 45% more radius before area bonuses."
-}
 const SYNERGIES = {
 	"cold": ["Cold Conductor", "frost", "thunder", false, "Lightning deals 35% more damage to chilled targets and jumps 60% farther from them."],
 	"steam": ["Steam Engine", "fire", "frost", false, "Fire hitting a chilled enemy consumes the slow and erupts into a steam blast. 3s cooldown per enemy."],
@@ -98,15 +112,6 @@ const ASCENSIONS = {
 	"reaping": ["The Last Harvest", "sickle", "orbit", "magnet", "armor", "blood_seed", "Harvest Moon and Coop Guard deal triple damage. Four sickles launch in all directions twice as often; 8 extra blades orbit at double speed."]
 }
 
-const EVOLUTIONS = {"egg": ["haste", "Golden Omelette"], "shuriken": ["speed", "Featherstorm"], "fire": ["area", "Phoenix Trail"], "orbit": ["armor", "Iron Roost"], "thunder": ["crit", "Thunderhead"], "frost": ["duration", "Deep Winter"], "sickle": ["magnet", "Reaping Season"], "shell": ["might", "Meteor Nest"]}
-
-const CHARACTER_COSTS = {"nugget": 0, "pepper": 40, "whisker": 60, "truffle": 90, "clover": 120}
-const CHARACTER_MILESTONES = {"nugget": 0, "pepper": 60, "whisker": 120, "truffle": 180, "clover": 300}
-
-
-# Permanent access is separate from the levels earned inside each run.
-const STARTER_EQUIPMENT = ["egg", "shuriken", "might", "haste", "vitality", "speed"]
-const STARTER_ITEMS = ["honey", "lunch", "bead"]
 # Music by phase of a run. Edit these to swap tracks; all come from the Ninja Adventure pack.
 const MUSIC = {
 	"menu": "33 - Calm Village.ogg",
@@ -149,12 +154,10 @@ static func equipment_owned(data: Dictionary, key: String, item: bool = false) -
 	return false
 
 static func unlock_requirement(key: String, item: bool = false) -> int:
-	if item: return [60, 120, 240][ITEMS[key][3]]
-	return 120 if key in WEAPONS else 60
+	return item_def(key).unlock_seconds if item else equipment_def(key).unlock_seconds
 
 static func unlock_cost(key: String, item: bool = false) -> int:
-	if item: return [25, 40, 60][ITEMS[key][3]]
-	return 60 if key in WEAPONS else 35
+	return item_def(key).unlock_gold if item else equipment_def(key).unlock_gold
 
 static func purchase_access(data: Dictionary, key: String, item: bool = false) -> bool:
 	if not (ITEMS if item else UPGRADES).has(key): return false
@@ -238,16 +241,8 @@ static func icon(key: String, item: bool = false, evolved: bool = false) -> Text
 	if not icon_cache.has(cache_key): icon_cache[cache_key] = load_icon(key, item, evolved)
 	return icon_cache[cache_key]
 
+
 static func load_icon(key: String, item: bool = false, evolved: bool = false) -> Texture2D:
-	if not item:
-		if evolved and key in WEAPONS: return load("res://assets/Coop/evo_" + key + ".png")
-		if key not in WEAPONS: return load("res://assets/Coop/tome_" + key + ".png")
-		if key in ["fire", "thunder", "frost", "shell"]: return load("res://assets/Coop/" + key + ".png")
-	var source = ITEMS if item else UPGRADES
-	var texture = load(source[key][2]) as Texture2D
-	if key == "shuriken":
-		var atlas = AtlasTexture.new()
-		atlas.atlas = texture
-		atlas.region = Rect2(0, 0, 16, 16)
-		return atlas
-	return texture
+	if item: return item_def(key).icon
+	var def = equipment_def(key)
+	return def.evolved_icon if evolved and def.evolved_icon else def.icon

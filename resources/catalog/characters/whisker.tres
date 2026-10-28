@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_loo5x"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Cat/SpriteSheet.png" id="2_c2qsl"]
+
+[resource]
+script = ExtResource("1_loo5x")
+key = "whisker"
+display_name = "Whisker"
+flavor = "The barn's night watch. Catch enemies on the sickle's return."
+starting_weapon = "sickle"
+sprite_sheet = ExtResource("2_c2qsl")
+unlock_gold = 60
+unlock_seconds = 120

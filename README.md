@@ -17,6 +17,8 @@ Import `project.godot` into Godot and press F6 on `scenes/ui/main_menu.tscn`, or
 | `scenes/actors/` | Player and enemy scenes |
 | `scenes/combat/` | Attack scenes and collision components |
 | `scripts/survival/` | Run director, progression data, arsenal, HUD, inspection, compass, pickups, projectiles, and input |
+| `scripts/data/` | Resource classes for weapons, tomes, items, defenders and the catalog |
+| `resources/catalog/` | Content as editable `.tres` files; see [Adding content](docs/design/CONTENT_GUIDE.md) |
 | `scripts/actors/` | Player and enemy behavior |
 | `scripts/ui/` | Menu and existing scene UI scripts |
 | `scripts/combat/` | Scene attack and collision scripts |
@@ -37,6 +39,7 @@ godot --headless --editor --import --quit --path .
 godot --headless --path . --script res://tests/progression_test.gd
 godot --headless --path . --script res://tests/expansion_test.gd
 godot --headless --path . --script res://tests/music_map_test.gd
+godot --headless --path . --script res://tests/catalog_test.gd
 godot --path . --script res://tools/capture/capture_menu.gd -- <existing-output-directory>
 ```
 

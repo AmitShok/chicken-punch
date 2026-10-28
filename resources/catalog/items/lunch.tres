@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Food/Onigiri.png" id="1_sqygn"]
+[ext_resource type="Script" path="res://scripts/data/item_def.gd" id="2_k3d0m"]
+
+[resource]
+script = ExtResource("2_k3d0m")
+key = "lunch"
+display_name = "Packed Lunch"
+description = "Heal 12 health per stack whenever you open a chest."
+icon = ExtResource("1_sqygn")
+starter = true

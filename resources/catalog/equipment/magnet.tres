@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Object/Bag.png" id="1_f0fle"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_magnet.png" id="2_gbt2l"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_61xio"]
+
+[resource]
+script = ExtResource("3_61xio")
+key = "magnet"
+display_name = "Forager"
+description = "+30 pickup radius and +10% XP."
+art = ExtResource("1_f0fle")
+icon = ExtResource("2_gbt2l")

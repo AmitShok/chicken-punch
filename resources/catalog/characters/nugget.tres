@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_0lld5"]
+
+[resource]
+script = ExtResource("1_0lld5")
+key = "nugget"
+display_name = "Nugget"
+flavor = "The original coop defender. A steady spread of eggs."
+starting_weapon = "egg"
+cell = Vector2i(20, 21)

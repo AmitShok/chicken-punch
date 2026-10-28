@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Items/Scroll/ScrollPlant.png" id="1_3w0ey"]
+[ext_resource type="Texture2D" path="res://assets/Coop/tome_duration.png" id="2_wvjgl"]
+[ext_resource type="Script" path="res://scripts/data/equipment_def.gd" id="3_46qcd"]
+
+[resource]
+script = ExtResource("3_46qcd")
+key = "duration"
+display_name = "Long Summer"
+description = "Extends the duration of effects such as lingering fire and icy slows by 20% per rank."
+art = ExtResource("1_3w0ey")
+icon = ExtResource("2_wvjgl")

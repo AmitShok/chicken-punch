@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_e8nr3"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Pig/SpriteSheetPink.png" id="2_fdc14"]
+
+[resource]
+script = ExtResource("1_e8nr3")
+key = "truffle"
+display_name = "Truffle"
+flavor = "A fearless farm pig. Break up crowds with explosive shells."
+starting_weapon = "shell"
+sprite_sheet = ExtResource("2_fdc14")
+faces_left = true
+unlock_gold = 90
+unlock_seconds = 180

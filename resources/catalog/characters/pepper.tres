@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CharacterDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_def.gd" id="1_wwvbo"]
+[ext_resource type="Texture2D" path="res://assets/Ninja Adventure - Asset Pack/Actor/Animals/Chicken/SpriteSheetBlack.png" id="2_dnxxf"]
+
+[resource]
+script = ExtResource("1_wwvbo")
+key = "pepper"
+display_name = "Pepper"
+flavor = "A hot-tempered hen. Leave burning trails for the horde."
+starting_weapon = "fire"
+sprite_sheet = ExtResource("2_dnxxf")
+unlock_gold = 40
+unlock_seconds = 60
