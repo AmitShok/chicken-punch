@@ -463,7 +463,11 @@ func _ready():
 		if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.pressed:
 			run.try_open_chest())
 	set_touch(TouchControls.touch_device())
+	add_to_group("touch_listeners")
 	apply_hud_layout()
+
+func on_touch_detected():
+	if not touch_mode: set_touch(true)
 
 # On-screen joystick and ability button, only for touch devices.
 func set_touch(enabled: bool):

@@ -212,7 +212,7 @@ A new save starts with Egg Barrage, Hot Foot, Big Heart, Fleet Feet, Forager, Se
 | Compact / full HUD | `Tab` |
 | Mute | `M` |
 
-**Touchscreens** (phones, tablets, touch PCs and mobile browsers) get on-screen controls automatically: drag anywhere on the left side for a floating joystick, tap the round button on the right for your defender's ability, and tap the chest prompt to open a chest. Menus are tapped like buttons. Devices without a touchscreen never see these controls.
+**Touchscreens** (phones, tablets, touch PCs and mobile browsers) get on-screen controls automatically: drag anywhere on the left side for a floating joystick, tap the round button on the right for your defender's ability, and tap the chest prompt to open a chest. Menus are tapped like buttons. Devices without a touchscreen never see these controls. If a browser hides its touchscreen, the first touch switches the game over. The main menu shows the build number in the bottom-right corner (with "touch" when touch controls are on), so you can confirm a device loaded the latest export.
 
 In **Options**, each switch shows its state: a **lit** switch and the word **ON** mean the setting is active.
 

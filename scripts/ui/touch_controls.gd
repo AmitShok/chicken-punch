@@ -27,10 +27,22 @@ var ability_finger = -1
 var resting_origin = Vector2(130, 470)
 var button_centre = Vector2(860, 430)
 
-# True on phones and tablets (native or in a mobile browser) and on any device
-# that reports a touchscreen.
+# Set by the SurvivalInput autoload on the first real touch, so any browser that
+# hides its touchscreen still switches over as soon as the player touches it.
+static var seen_touch = false
+
+# True on phones and tablets (native or in a mobile browser), on any device that
+# reports a touchscreen, and once the player has touched the screen.
 static func touch_device() -> bool:
-	return OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available()
+	if seen_touch or OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available():
+		return true
+	# Ask the browser directly: iPads in desktop mode report a Mac user agent,
+	# but still have touch points and a coarse pointer.
+	if OS.has_feature("web"):
+		# Booleans do not come back from JavaScriptBridge reliably; a string always does.
+		var answer = JavaScriptBridge.eval("String((navigator.maxTouchPoints > 0) || ('ontouchstart' in window) || (window.matchMedia ? matchMedia('(any-pointer: coarse)').matches : false))")
+		return typeof(answer) == TYPE_STRING and answer == "true"
+	return false
 
 func _ready():
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -141,3 +153,10 @@ func _draw():
 		var secs = "%.1f" % player.ability_cooldown
 		var width = font.get_string_size(secs, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
 		draw_string(font, centre + Vector2(-width / 2.0, BUTTON_RADIUS + 18), secs, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, PAPER)
+
+# One line for the log: which signals said this is a touch device.
+static func touch_report() -> String:
+	var parts = ["seen=%s" % seen_touch, "mobile=%s" % OS.has_feature("mobile"), "web_android=%s" % OS.has_feature("web_android"), "web_ios=%s" % OS.has_feature("web_ios"), "touchscreen=%s" % DisplayServer.is_touchscreen_available()]
+	if OS.has_feature("web"):
+		parts.append("browser=%s" % JavaScriptBridge.eval("JSON.stringify({points: navigator.maxTouchPoints, ontouch: 'ontouchstart' in window, coarse: window.matchMedia ? matchMedia('(any-pointer: coarse)').matches : null})"))
+	return "Touch detection: " + ", ".join(parts) + " -> " + str(touch_device())

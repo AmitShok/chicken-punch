@@ -37,6 +37,24 @@ func _ready():
 	if DisplayServer.get_name() != "headless":
 		music.play()
 	build_menu()
+	print(preload("res://scripts/ui/touch_controls.gd").touch_report())
+	add_to_group("touch_listeners")
+	var build_label = UI.label("Build " + Data.BUILD + ("  /  touch" if preload("res://scripts/ui/touch_controls.gd").touch_device() else ""), 16)
+	build_label.name = "BuildLabel"
+	build_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	build_label.add_theme_color_override("font_color", Color(1, 0.94, 0.8, 0.55))
+	build_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	build_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	build_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	build_label.offset_right = -8
+	build_label.offset_bottom = -2
+	add_child(build_label)
+
+# A first real touch rebuilds the page without keyboard hints.
+func on_touch_detected():
+	build_menu()
+	var build_label = get_node_or_null("BuildLabel")
+	if build_label: build_label.text = "Build " + Data.BUILD + "  /  touch"
 
 const PAGES = {
 	"home": ["COOP", "IconHome01a", "CHICKENPUNCH"],

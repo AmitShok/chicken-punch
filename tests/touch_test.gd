@@ -35,6 +35,14 @@ func test():
 	var ui = run.ui
 	check(not preload("res://scripts/ui/touch_controls.gd").touch_device() and ui.touch_controls == null, "A desktop without a touchscreen gets no touch controls")
 	check(ui.hud_hint.get_parent().visible, "Desktop keeps its keyboard hints")
+	# A touch on a device that did not report a touchscreen switches it over at once.
+	var first = InputEventScreenTouch.new()
+	first.pressed = true
+	first.position = Vector2(700, 300)
+	root.get_node("SurvivalInput")._input(first)
+	await process_frame
+	check(ui.touch_controls != null and not ui.hud_hint.get_parent().visible, "The first real touch turns on touch controls")
+	check(preload("res://scripts/ui/touch_controls.gd").touch_device(), "Later screens also see a touch device")
 	ui.set_touch(true)
 	await process_frame
 	pad = ui.touch_controls
@@ -87,6 +95,7 @@ func test():
 	ui.set_touch(false)
 	await process_frame
 	check(ui.touch_controls == null and ui.hud_hint.get_parent().visible, "Turning touch off removes the controls and restores hints")
+	preload("res://scripts/ui/touch_controls.gd").seen_touch = false
 	run.queue_free()
 	print("TOUCH RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)

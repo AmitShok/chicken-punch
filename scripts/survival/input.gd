@@ -1,5 +1,7 @@
 extends Node
 
+const TouchControls = preload("res://scripts/ui/touch_controls.gd")
+
 func _ready():
 	for entry in [["interact", KEY_E], ["dash", KEY_SPACE], ["pause", KEY_ESCAPE], ["mute", KEY_M], ["left", KEY_LEFT], ["right", KEY_RIGHT], ["up", KEY_UP], ["down", KEY_DOWN]]:
 		if not InputMap.has_action(entry[0]):
@@ -8,3 +10,10 @@ func _ready():
 		event.physical_keycode = entry[1]
 		InputMap.action_add_event(entry[0], event)
 
+
+# The first real touch switches every screen to touch controls, in case the
+# device did not report a touchscreen when the game started.
+func _input(event):
+	if event is InputEventScreenTouch and event.pressed and not TouchControls.seen_touch:
+		TouchControls.seen_touch = true
+		get_tree().call_group("touch_listeners", "on_touch_detected")
