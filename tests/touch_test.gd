@@ -33,6 +33,15 @@ func test():
 	run.spawn_clock = 1.0e9
 	run.elite_clock = 1.0e9
 	var ui = run.ui
+	# Phones set to Hebrew or Arabic must not mirror the HUD or new buttons.
+	TranslationServer.set_locale("he")
+	root.get_node("SurvivalInput")._ready()
+	var probe = Button.new()
+	probe.position = Vector2(12, 10)
+	ui.root.add_child(probe)
+	await process_frame
+	check(not ui.root.is_layout_rtl() and probe.position.x == 12, "A right-to-left phone language keeps everything left-to-right")
+	probe.queue_free()
 	check(not preload("res://scripts/ui/touch_controls.gd").touch_device() and ui.touch_controls == null, "A desktop without a touchscreen gets no touch controls")
 	check(ui.hud_hint.get_parent().visible, "Desktop keeps its keyboard hints")
 	# A touch on a device that did not report a touchscreen switches it over at once.

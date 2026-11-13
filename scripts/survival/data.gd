@@ -6,7 +6,7 @@ const MAX_RANK = 10
 const MAX_ITEM_LEVEL = 10
 const PACK = "res://assets/Ninja Adventure - Asset Pack/"
 # Shown on the main menu so a device can confirm which export it loaded.
-const BUILD = "2026.11.13-touch2"
+const BUILD = "2026.11.13-ltr3"
 
 # Weapons, tomes, items and defenders live in res://resources/catalog/ as
 # EquipmentDef / ItemDef / CharacterDef resources, listed in catalog.tres.
