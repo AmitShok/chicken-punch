@@ -11,6 +11,7 @@ const Inspection = preload("res://scripts/survival/inspection.gd")
 const Book = preload("res://scripts/ui/book_surface.gd")
 const FONT = "res://assets/fonts/m6x11.ttf"
 const SPINE = 44
+const TouchControls = preload("res://scripts/ui/touch_controls.gd")
 static var font_cache: FontFile
 var chest_prompt: Label
 var chest_cost_label: Label
@@ -30,6 +31,8 @@ var banner_title: Label
 var banner_subtitle: Label
 var banner_time = 0.0
 var chest_plate: PanelContainer
+var touch_controls: Control
+var touch_mode = false
 var modal: Control
 var modal_open = false
 var mode = ""
@@ -454,7 +457,32 @@ func _ready():
 	prompt_row.add_child(key_cap("E"))
 	chest_prompt = plate_text("", 16)
 	prompt_row.add_child(chest_prompt)
+	# The chest prompt doubles as a button, which touch players need.
+	chest_plate.mouse_filter = Control.MOUSE_FILTER_STOP
+	chest_plate.gui_input.connect(func(event):
+		if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.pressed:
+			run.try_open_chest())
+	set_touch(TouchControls.touch_device())
 	apply_hud_layout()
+
+# On-screen joystick and ability button, only for touch devices.
+func set_touch(enabled: bool):
+	touch_mode = enabled
+	if enabled and not is_instance_valid(touch_controls):
+		touch_controls = TouchControls.new()
+		touch_controls.name = "TouchControls"
+		touch_controls.run = run
+		touch_controls.ui = self
+		root.add_child(touch_controls)
+	elif not enabled and is_instance_valid(touch_controls):
+		touch_controls.release_all()
+		touch_controls.queue_free()
+		touch_controls = null
+	# Keyboard hints mean nothing on a touchscreen.
+	hud_hint.get_parent().visible = not enabled
+	for cap in chest_plate.get_child(0).get_children():
+		if cap is PanelContainer: cap.visible = not enabled
+	if is_instance_valid(pause_button): apply_hud_layout()
 
 # A VBox pinned to a screen anchor that grows away from that edge as it fills.
 func anchored_box(preset: int, offset: Vector2) -> VBoxContainer:
@@ -575,7 +603,7 @@ func apply_hud_layout():
 	hud.add_theme_font_size_override("font_size", 16 if compact_hud else 32)
 	health.custom_minimum_size.x = 140 if compact_hud else 180
 	hud_hint.text = "Expand" if compact_hud else "Compact"
-	pause_button.text = "Esc" if compact_hud else "Esc  Build"
+	pause_button.text = ("Pause" if touch_mode else "Esc") if compact_hud else ("Pause" if touch_mode else "Esc  Build")
 
 func inventory_contents(parent: VBoxContainer, detailed: bool):
 	for weapons in [true, false]:
@@ -647,7 +675,7 @@ func _process(delta):
 	chest_plate.visible = nearby_chest != null and not modal_open
 	if nearby_chest != null:
 		var cost = 0 if nearby_chest.chest_free else run.chest_price()
-		chest_prompt.text = "Open chest  /  FREE" if cost == 0 else "Open chest  /  %d coins" % cost if run.coins >= cost else "%d coins needed  /  Have %d" % [cost,run.coins]
+		chest_prompt.text = ("Tap: " if touch_mode and run.coins >= cost else "") + ("Open chest  /  FREE" if cost == 0 else "Open chest  /  %d coins" % cost if run.coins >= cost else "%d coins needed  /  Have %d" % [cost,run.coins])
 	hud.tooltip_text = "%d kills" % run.kills
 	health.motion_enabled = run.save.get("combat_feedback", true)
 	health.max_value = p.max_hp
@@ -657,7 +685,7 @@ func _process(delta):
 	xp.value = p.current_xp
 	level_text.text = "Lv %d" % p.level if compact_hud else "Lv %d  /  %d %s" % [p.level, run.kills, "kill" if run.kills == 1 else "kills"]
 	var ability = Data.character_def(p.character_key).ability_name
-	loadout.text = "%s ready (Space)" % ability if p.ability_cooldown <= 0 else "%s %.1fs" % [ability, p.ability_cooldown]
+	loadout.text = ("%s ready" if touch_mode else "%s ready (Space)") % ability if p.ability_cooldown <= 0 else "%s %.1fs" % [ability, p.ability_cooldown]
 	inventory_panel.visible = not modal_open
 	hud_refresh -= delta
 	if hud_refresh <= 0:
@@ -829,7 +857,7 @@ func show_choices():
 		skip_button.disabled = run.skips <= 0
 		skip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		actions.add_child(skip_button)
-	box.add_child(label("1 / 2 / 3 to select.  " + ("Treasure items do not use weapon or tome slots." if is_item else "Each pick is one rank; Rare gives 1.5x and Epic 2x its stats. Max rank 10. Banishes left: %d" % run.banishes), 14))
+	box.add_child(label(("Tap TAKE to choose.  " if touch_mode else "1 / 2 / 3 to select.  ") + ("Treasure items do not use weapon or tome slots." if is_item else "Each pick is one rank; Rare gives 1.5x and Epic 2x its stats. Max rank 10. Banishes left: %d" % run.banishes), 14))
 	if first:
 		first.grab_focus()
 

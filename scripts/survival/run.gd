@@ -1277,6 +1277,8 @@ func dev_key(keycode: int) -> bool:
 		KEY_F4:
 			var next = [180.0, 360.0, DURATION][mini(boss_stage, 2)]
 			elapsed = maxf(elapsed, next - 5.0)
+		KEY_F6:
+			ui.set_touch(not ui.touch_mode)
 		KEY_F5:
 			for key in ranks.keys():
 				ranks[key] = Data.MAX_RANK
@@ -1285,5 +1287,5 @@ func dev_key(keycode: int) -> bool:
 			ui.refresh_inventory()
 		_:
 			return false
-	ui.announce("DEV", {KEY_F1: "Level up", KEY_F2: "Free chest dropped", KEY_F3: "+100 coins", KEY_F4: "Skipped to the next guardian", KEY_F5: "Everything owned is rank 10"}[keycode])
+	ui.announce("DEV", {KEY_F1: "Level up", KEY_F2: "Free chest dropped", KEY_F3: "+100 coins", KEY_F4: "Skipped to the next guardian", KEY_F5: "Everything owned is rank 10", KEY_F6: "Touch controls " + ("on" if ui.touch_mode else "off")}[keycode])
 	return true

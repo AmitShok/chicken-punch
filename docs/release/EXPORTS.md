@@ -19,7 +19,7 @@ Upload all files in `builds/web/` together to a static web host. The entry page 
 
 For a local preview, run `python -m http.server 8000 --directory builds/web` from the project root, then open http://localhost:8000. Opening index.html directly with file:// is unsupported. Use HTTPS for public hosting.
 
-The web preset uses single-threaded WebAssembly and WebGL 2 Compatibility rendering. No SharedArrayBuffer isolation headers are required. Progress saves in browser storage per site, separately from the Windows save. Browser storage must be allowed. Sound begins after user interaction. Quit is hidden on web because browsers cannot close their own tab on demand.
+The web preset uses single-threaded WebAssembly and WebGL 2 Compatibility rendering. No SharedArrayBuffer isolation headers are required. Progress saves in browser storage per site, separately from the Windows save. Browser storage must be allowed. Sound begins after user interaction. Quit is hidden on web because browsers cannot close their own tab on demand. Phones, tablets and other touchscreens get an on-screen joystick and ability button automatically; desktops without a touchscreen do not.
 
 Reference: https://docs.godotengine.org/en/4.5/tutorials/export/exporting_for_web.html
 
@@ -37,4 +37,4 @@ Generated builds are excluded from Git; export presets and source changes are ve
 
 ## Developer tools
 
-Debug builds (running from the Godot editor, or `--export-debug`) include a hidden developer page: press F12 on the main menu to complete quests, add gold, unlock everything, max training, unlock levels or reset progress. During a run, F1 gains a level, F2 drops a free chest, F3 adds 100 coins, F4 skips to just before the next guardian and F5 maxes everything owned. Release exports (`--export-release`, as above) leave all of these out.
+Debug builds (running from the Godot editor, or `--export-debug`) include a hidden developer page: press F12 on the main menu to complete quests, add gold, unlock everything, max training, unlock levels or reset progress. During a run, F1 gains a level, F2 drops a free chest, F3 adds 100 coins, F4 skips to just before the next guardian and F5 maxes everything owned and F6 toggles the touch controls. Release exports (`--export-release`, as above) leave all of these out.

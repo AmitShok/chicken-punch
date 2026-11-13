@@ -212,6 +212,8 @@ A new save starts with Egg Barrage, Hot Foot, Big Heart, Fleet Feet, Forager, Se
 | Compact / full HUD | `Tab` |
 | Mute | `M` |
 
+**Touchscreens** (phones, tablets, touch PCs and mobile browsers) get on-screen controls automatically: drag anywhere on the left side for a floating joystick, tap the round button on the right for your defender's ability, and tap the chest prompt to open a chest. Menus are tapped like buttons. Devices without a touchscreen never see these controls.
+
 In **Options**, each switch shows its state: a **lit** switch and the word **ON** mean the setting is active.
 
 ## Developer tools (unlock menu)
@@ -239,6 +241,7 @@ For testing, **debug builds** include a hidden developer menu. A debug build is 
 | `F3` | +100 coins |
 | `F4` | Skip to 5 seconds before the next guardian |
 | `F5` | Raise every weapon and tome you own to rank 10 |
+| `F6` | Toggle the touch controls, to test them on a PC |
 
 **Quick way to try new content:** press `F12`, click **Unlock all gear and defenders** and **Max training**, then start a run. Press `F5` to max your gear, then `F2` a few times to open chests and evolve weapons.
 

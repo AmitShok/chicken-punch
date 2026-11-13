@@ -103,7 +103,9 @@ func build_menu():
 	var footer = Control.new()
 	footer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pages[0].add_child(footer)
-	pages[0].add_child(UI.hint_row([["Esc", "Options" if page == "home" else "Back"], ["Enter", "Select"]]))
+	# Key hints only make sense with a keyboard.
+	if not preload("res://scripts/ui/touch_controls.gd").touch_device():
+		pages[0].add_child(UI.hint_row([["Esc", "Options" if page == "home" else "Back"], ["Enter", "Select"]]))
 
 func open_page(key: String):
 	match key:
@@ -618,7 +620,8 @@ func build_dev(left: VBoxContainer, right: VBoxContainer):
 	var owned_items = Data.ITEMS.keys().filter(func(k): return Data.equipment_owned(save, k, true)).size()
 	right.add_child(UI.label("Gold %d    Best %d:%02d    Wins %d\nQuests %d / %d    Build tools: reroll %d, skip %d, banish %d\nGear %d / %d    Items %d / %d    Defenders %d / %d" % [save.gold, save.best / 60, save.best % 60, save.wins, Data.quests_completed(save), Data.QUESTS.size(), Data.tool_uses(save, "reroll"), Data.tool_uses(save, "skip"), Data.tool_uses(save, "banish"), owned_gear, Data.UPGRADES.size(), owned_items, Data.ITEMS.size(), save.unlocked.size(), Data.CHARACTERS.size()], 16))
 	right.add_child(page_heading("IN-RUN KEYS  (DEBUG BUILDS)"))
-	right.add_child(UI.label("F1  Gain a level\nF2  Drop a free chest at your feet\nF3  +100 coins\nF4  Skip to 5 seconds before the next guardian\nF5  Max every weapon and tome you own (rank 10)", 16))
+	right.add_child(UI.label("F1  Gain a level\nF2  Drop a free chest at your feet\nF3  +100 coins\nF4  Skip to 5 seconds before the next guardian\nF5  Max every weapon and tome you own (rank 10)
+F6  Toggle the touch controls (to test them on a PC)", 16))
 
 func dev_action(action: String):
 	if action == "reset" and not reset_armed:
