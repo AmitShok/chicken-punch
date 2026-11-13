@@ -33,6 +33,7 @@ var banner_time = 0.0
 var chest_plate: PanelContainer
 var touch_controls: Control
 var touch_mode = false
+var fullscreen_button: Button
 var modal: Control
 var modal_open = false
 var mode = ""
@@ -368,6 +369,9 @@ func _ready():
 	pause_button = button("Esc  Build", show_pause)
 	pause_button.focus_mode = Control.FOCUS_NONE
 	corner.add_child(pause_button)
+	# Top-left beside the build panel: an oversized embed frame cuts off the right and bottom.
+	fullscreen_button = TouchControls.fullscreen_button()
+	root.add_child(fullscreen_button)
 	# Top left: the build in dark item slots.
 	inventory_panel = PanelContainer.new()
 	inventory_panel.position = Vector2(12, 8)
@@ -486,6 +490,7 @@ func set_touch(enabled: bool):
 	hud_hint.get_parent().visible = not enabled
 	for cap in chest_plate.get_child(0).get_children():
 		if cap is PanelContainer: cap.visible = not enabled
+	if is_instance_valid(fullscreen_button): fullscreen_button.visible = enabled and TouchControls.wants_fullscreen_button()
 	if is_instance_valid(pause_button): apply_hud_layout()
 
 # A VBox pinned to a screen anchor that grows away from that edge as it fills.
@@ -670,6 +675,9 @@ func slot(key: String, is_item: bool) -> PanelContainer:
 func _process(delta):
 	if not is_instance_valid(run.player):
 		return
+	if is_instance_valid(fullscreen_button) and fullscreen_button.visible:
+		fullscreen_button.position = Vector2(inventory_panel.get_rect().end.x + 8, 8)
+
 	var p = run.player
 	timer_label.text = "%02d:%02d" % [int(run.elapsed) / 60, int(run.elapsed) % 60]
 	hud.text = str(run.coins)

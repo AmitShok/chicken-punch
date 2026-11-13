@@ -160,3 +160,30 @@ static func touch_report() -> String:
 	if OS.has_feature("web"):
 		parts.append("browser=%s" % JavaScriptBridge.eval("JSON.stringify({points: navigator.maxTouchPoints, ontouch: 'ontouchstart' in window, coarse: window.matchMedia ? matchMedia('(any-pointer: coarse)').matches : null})"))
 	return "Touch detection: " + ", ".join(parts) + " -> " + str(touch_device())
+
+# Phones in a browser: an embedding page (itch.io) can show the game in a frame
+# larger than the screen, cutting off the edges. Fullscreen always fits the screen.
+static func wants_fullscreen_button() -> bool:
+	if not OS.has_feature("web") or not touch_device():
+		return false
+	# iPhone Safari only allows fullscreen for video, so the button would do nothing there.
+	var allowed = JavaScriptBridge.eval("String(!!(document.fullscreenEnabled || document.webkitFullscreenEnabled))")
+	return typeof(allowed) == TYPE_STRING and allowed == "true"
+
+static func fullscreen_button() -> Button:
+	var button = Button.new()
+	button.name = "FullscreenButton"
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(0, 32)
+	button.add_theme_font_size_override("font_size", 16)
+	button.text = fullscreen_label()
+	button.pressed.connect(func():
+		var full = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
+		# The browser switches on its own schedule; refresh the label once it has.
+		await button.get_tree().create_timer(0.4).timeout
+		if is_instance_valid(button): button.text = fullscreen_label())
+	return button
+
+static func fullscreen_label() -> String:
+	return "Exit full" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "Fullscreen"

@@ -49,12 +49,25 @@ func _ready():
 	build_label.offset_right = -8
 	build_label.offset_bottom = -2
 	add_child(build_label)
+	refresh_fullscreen_button()
+
+# Top-left, the one corner an oversized embed frame never cuts off.
+func refresh_fullscreen_button():
+	var existing = get_node_or_null("FullscreenButton")
+	if not preload("res://scripts/ui/touch_controls.gd").wants_fullscreen_button():
+		if existing: existing.queue_free()
+		return
+	if existing: return
+	var full = preload("res://scripts/ui/touch_controls.gd").fullscreen_button()
+	full.position = Vector2(12, 10)
+	add_child(full)
 
 # A first real touch rebuilds the page without keyboard hints.
 func on_touch_detected():
 	build_menu()
 	var build_label = get_node_or_null("BuildLabel")
 	if build_label: build_label.text = "Build " + Data.BUILD + "  /  touch"
+	refresh_fullscreen_button()
 
 const PAGES = {
 	"home": ["COOP", "IconHome01a", "CHICKENPUNCH"],
@@ -71,7 +84,13 @@ func build_menu():
 		menu.queue_free()
 	menu = CenterContainer.new()
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The full-screen container must not swallow taps outside the book.
+	menu.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(menu)
+	# Corner overlays (fullscreen button, build label) stay in front of each new page.
+	for overlay in ["FullscreenButton", "BuildLabel"]:
+		var node = get_node_or_null(overlay)
+		if node: move_child(node, -1)
 	var stack = VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 0)
 	menu.add_child(stack)
