@@ -639,7 +639,7 @@ func inventory_contents(parent: VBoxContainer, detailed: bool):
 		hint.add_theme_color_override("font_color", MUTED)
 		parent.add_child(hint)
 	if detailed:
-		parent.add_child(label("Hover for details.", 14))
+		parent.add_child(label("Tap Pause for details." if touch_mode else "Hover for details.", 14))
 
 func slot(key: String, is_item: bool) -> PanelContainer:
 	var frame = PanelContainer.new()

@@ -141,9 +141,9 @@ const LEVELS = {
 	"pasture": {"name": "Moonlit Pasture", "description": "Rocky rings under a blue moon. Casters arrive earlier.", "best": 360, "tint": Color("b8d5ed"), "pressure": 1.24}
 }
 const DIFFICULTIES = [
-	{"name": "I · Standard", "power": 1.0, "reward": 1.0, "description": "Normal enemy strength. 1x gold."},
-	{"name": "II · Ferocious", "power": 1.35, "reward": 1.3, "description": "35% more enemy HP, stronger hits. 1.3x gold."},
-	{"name": "III · Nightmare", "power": 1.8, "reward": 1.6, "description": "80% more enemy HP, stronger hits. 1.6x gold."}
+	{"name": "I: Standard", "power": 1.0, "reward": 1.0, "description": "Normal enemy strength. 1x gold."},
+	{"name": "II: Ferocious", "power": 1.35, "reward": 1.3, "description": "35% more enemy HP, stronger hits. 1.3x gold."},
+	{"name": "III: Nightmare", "power": 1.8, "reward": 1.6, "description": "80% more enemy HP, stronger hits. 1.6x gold."}
 ]
 
 static func equipment_owned(data: Dictionary, key: String, item: bool = false) -> bool:

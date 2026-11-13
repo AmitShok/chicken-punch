@@ -172,7 +172,7 @@ func _ready():
 	AudioServer.set_bus_mute(0, save.muted)
 	for i in range(3):
 		drop("chest", walkable_position(150 + i * 55), 1)
-	ui.announce(Data.LEVELS[level_id].name.to_upper(), Data.DIFFICULTIES[difficulty_tier].name + " · Defeat the final guardian at 10:00.")
+	ui.announce(Data.LEVELS[level_id].name.to_upper(), Data.DIFFICULTIES[difficulty_tier].name + "  /  Defeat the final guardian at 10:00.")
 
 func _physics_process(delta):
 	if ended:
