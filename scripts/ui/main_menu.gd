@@ -5,6 +5,8 @@ const Book = preload("res://scripts/ui/book_surface.gd")
 @export var game: PackedScene
 var save: Dictionary
 var menu: Control
+# Whether the current page was laid out for touch (no keyboard hints).
+var built_for_touch = false
 var difficulty_index = 0
 var level_id = "meadow"
 var preview = "nugget"
@@ -64,7 +66,10 @@ func refresh_fullscreen_button():
 
 # A first real touch rebuilds the page without keyboard hints.
 func on_touch_detected():
-	build_menu()
+	# Rebuilding mid-tap would throw that first tap away, so only do it when the
+	# page still shows keyboard hints.
+	if not built_for_touch:
+		build_menu()
 	var build_label = get_node_or_null("BuildLabel")
 	if build_label: build_label.text = "Build " + Data.BUILD + "  /  touch"
 	refresh_fullscreen_button()
@@ -79,6 +84,7 @@ const PAGES = {
 }
 
 func build_menu():
+	built_for_touch = preload("res://scripts/ui/touch_controls.gd").touch_device()
 	if is_instance_valid(menu):
 		remove_child(menu)
 		menu.queue_free()
